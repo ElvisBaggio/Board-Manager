@@ -5,7 +5,8 @@ import { useBoards } from '../hooks/useBoards';
 import { MONTHS } from '../utils/data';
 import FeatureBar, { STATUS_COLORS } from '../components/FeatureBar';
 import FeatureModal from '../components/FeatureModal';
-import { ArrowLeft, Filter, Plus, Share2, Sun, Moon, LogOut, ChevronLeft, ChevronRight, GripVertical, ZoomIn, ZoomOut } from 'lucide-react';
+import ImportModal from '../components/ImportModal';
+import { ArrowLeft, Filter, Plus, Share2, Sun, Moon, LogOut, ChevronLeft, ChevronRight, GripVertical, Upload } from 'lucide-react';
 
 const QUARTERS = [
     { label: 'Q1', months: [0, 1, 2] },
@@ -49,6 +50,7 @@ export default function Roadmap() {
     const [year, setYear] = useState(new Date().getFullYear());
     const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
     const [showFeatureModal, setShowFeatureModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const [editingFeature, setEditingFeature] = useState(null);
     const [activeLaneId, setActiveLaneId] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
@@ -58,14 +60,31 @@ export default function Roadmap() {
     const filterRef = useRef(null);
 
     // Zoom state
-    const [zoomLevel, setZoomLevel] = useState(2); // 0=1Q, 1=2Q, 2=full year
-    const [startQuarter, setStartQuarter] = useState(0); // which quarter to start from
+    const [zoomLevel, setZoomLevel] = useState(2);
+    const [startQuarter, setStartQuarter] = useState(0);
+
+    // Close filter panel when clicking outside
+    useEffect(() => {
+        if (!showFilters) return;
+        const handleClickOutside = (e) => {
+            if (filterRef.current && !filterRef.current.contains(e.target)) {
+                setShowFilters(false);
+            }
+        };
+        // Use setTimeout to avoid closing immediately on the same click that opened it
+        const timer = setTimeout(() => {
+            document.addEventListener('mousedown', handleClickOutside);
+        }, 0);
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showFilters]);
 
     // Calculate visible months and quarters based on zoom
     const { visibleQuarters, visibleMonths } = useMemo(() => {
         const zoom = ZOOM_LEVELS[zoomLevel];
         const numQ = zoom.quarters;
-        const endQ = Math.min(startQuarter + numQ, 4);
         const actualStart = Math.min(startQuarter, 4 - numQ);
         const vQuarters = QUARTERS.slice(actualStart, actualStart + numQ);
         const vMonths = vQuarters.flatMap(q => q.months);
@@ -82,26 +101,6 @@ export default function Roadmap() {
 
     const navNextQuarter = () => {
         if (canNavNext) setStartQuarter(s => s + 1);
-    };
-
-    const handleZoomIn = () => {
-        if (zoomLevel > 0) {
-            setZoomLevel(z => z - 1);
-            // If we're going from full year to 2Q, start at Q1
-            // If going from 2Q to 1Q, keep startQuarter
-        }
-    };
-
-    const handleZoomOut = () => {
-        if (zoomLevel < 2) {
-            const newZoom = zoomLevel + 1;
-            setZoomLevel(newZoom);
-            // Adjust startQuarter if it would overflow
-            const maxStart = 4 - ZOOM_LEVELS[newZoom].quarters;
-            if (startQuarter > maxStart) {
-                setStartQuarter(maxStart);
-            }
-        }
     };
 
     const toggleTheme = () => {
@@ -128,7 +127,7 @@ export default function Roadmap() {
     };
 
     const handleDeleteLane = (laneId) => {
-        if (confirm('Excluir este objetivo e todas as features?')) {
+        if (confirm('Excluir este objetivo e todas as iniciativas?')) {
             deleteLane(laneId);
         }
     };
@@ -156,10 +155,41 @@ export default function Roadmap() {
     };
 
     const handleDeleteFeature = (featureId) => {
-        if (confirm('Excluir esta feature?')) {
+        if (confirm('Excluir esta iniciativa?')) {
             deleteFeature(featureId);
             setShowFeatureModal(false);
         }
+    };
+
+    // Click on timeline to create a feature at that position
+    const handleTimelineClick = (e, laneId) => {
+        // Don't create if clicking on a feature bar
+        if (e.target.closest('.feature-bar')) return;
+
+        const td = e.currentTarget;
+        const rect = td.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const ratio = clickX / rect.width;
+
+        // Calculate the date from the clicked position
+        const firstMonth = Math.min(...visibleMonths);
+        const lastMonth = Math.max(...visibleMonths);
+        const rangeStart = new Date(year, firstMonth, 1);
+        const rangeEnd = new Date(year, lastMonth + 1, 0);
+        const totalDays = (rangeEnd - rangeStart) / (1000 * 60 * 60 * 24) + 1;
+
+        const clickDay = Math.floor(ratio * totalDays);
+        const startDate = new Date(rangeStart.getTime() + clickDay * 24 * 60 * 60 * 1000);
+        const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // default 30 days
+
+        const fmt = (d) => d.toISOString().split('T')[0];
+
+        setActiveLaneId(laneId);
+        setEditingFeature({
+            startDate: fmt(startDate),
+            endDate: fmt(endDate),
+        });
+        setShowFeatureModal(true);
     };
 
     const handleDrop = useCallback((e, targetLaneId) => {
@@ -207,6 +237,40 @@ export default function Roadmap() {
         navigate('/login');
     };
 
+    // Import handler - creates lanes and features from CSV data
+    const handleImport = (rows) => {
+        const laneMap = {};
+        // Map existing lanes by title
+        lanes.forEach(l => { laneMap[l.title.toLowerCase()] = l.id; });
+
+        for (const row of rows) {
+            let laneId;
+            const laneName = row.laneName || `Objetivo ${lanes.length + Object.keys(laneMap).length + 1}`;
+
+            if (laneMap[laneName.toLowerCase()]) {
+                laneId = laneMap[laneName.toLowerCase()];
+            } else {
+                // Create new lane
+                const newLaneId = createLane(boardId, laneName);
+                laneMap[laneName.toLowerCase()] = newLaneId;
+                laneId = newLaneId;
+            }
+
+            createFeature(laneId, {
+                title: row.title,
+                description: row.description,
+                status: row.status,
+                tags: row.tags,
+                startDate: row.startDate,
+                endDate: row.endDate,
+            });
+        }
+
+        setShowImportModal(false);
+        // Reload data from backend
+        setTimeout(() => loadBoardData(boardId), 500);
+    };
+
     if (!board) {
         return (
             <div className="auth-container">
@@ -244,6 +308,9 @@ export default function Roadmap() {
                     <div style={{ position: 'relative' }} ref={filterRef}>
                         <button className="btn btn-glass" onClick={() => setShowFilters(!showFilters)}>
                             <Filter size={16} /> Filtros
+                            {filters.statuses.length > 0 && (
+                                <span className="filter-badge">{filters.statuses.length}</span>
+                            )}
                         </button>
                         {showFilters && (
                             <div className="filter-panel glass-surface">
@@ -264,6 +331,9 @@ export default function Roadmap() {
                             </div>
                         )}
                     </div>
+                    <button className="btn btn-glass" onClick={() => setShowImportModal(true)}>
+                        <Upload size={16} /> Importar
+                    </button>
                     <button className="btn btn-primary" onClick={handleAddLane}>
                         <Plus size={16} /> Lane
                     </button>
@@ -291,7 +361,6 @@ export default function Roadmap() {
                         </div>
 
                         <div className="timeline-zoom-controls">
-                            {/* Quarter navigation when zoomed */}
                             {zoomLevel < 2 && (
                                 <button
                                     className="btn-icon-sm"
@@ -394,7 +463,7 @@ export default function Roadmap() {
                                                         <button
                                                             className="lane-add-btn"
                                                             onClick={() => openCreateFeature(lane.id)}
-                                                            title="Adicionar feature"
+                                                            title="Adicionar iniciativa"
                                                         >
                                                             <Plus size={14} />
                                                         </button>
@@ -405,6 +474,9 @@ export default function Roadmap() {
                                                     className="timeline-lane-content"
                                                     onDragOver={handleDragOver}
                                                     onDrop={(e) => handleDrop(e, lane.id)}
+                                                    onClick={(e) => handleTimelineClick(e, lane.id)}
+                                                    title="Clique para criar uma iniciativa"
+                                                    style={{ cursor: 'crosshair' }}
                                                 >
                                                     {features.map(feature => (
                                                         <FeatureBar
@@ -444,6 +516,15 @@ export default function Roadmap() {
                     onSave={handleSaveFeature}
                     onDelete={handleDeleteFeature}
                     onClose={() => { setShowFeatureModal(false); setEditingFeature(null); }}
+                />
+            )}
+
+            {/* Import Modal */}
+            {showImportModal && (
+                <ImportModal
+                    onImport={handleImport}
+                    onClose={() => setShowImportModal(false)}
+                    existingLanes={lanes}
                 />
             )}
         </>

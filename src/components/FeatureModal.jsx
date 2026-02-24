@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { X, Trash2 } from 'lucide-react';
 
 const STATUS_OPTIONS = ['Not Started', 'On Going', 'Done', 'Blocked'];
+const STATUS_LABELS = {
+    'Not Started': 'Não Iniciado',
+    'On Going': 'Em Andamento',
+    'Done': 'Concluído',
+    'Blocked': 'Bloqueado',
+};
 
 export default function FeatureModal({ feature, onSave, onDelete, onClose }) {
     const [title, setTitle] = useState('');
@@ -53,7 +59,7 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose }) {
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>{isEdit ? 'Editar Feature' : 'Nova Feature'}</h2>
+                    <h2>{isEdit ? 'Editar Iniciativa' : 'Nova Iniciativa'}</h2>
                     <button className="modal-close" onClick={onClose}><X size={20} /></button>
                 </div>
 
@@ -63,7 +69,7 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose }) {
                         <input
                             type="text"
                             className="glass-input"
-                            placeholder="Título da feature"
+                            placeholder="Título da iniciativa"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             autoFocus
@@ -74,7 +80,7 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose }) {
                         <label>Descrição</label>
                         <textarea
                             className="glass-textarea"
-                            placeholder="Descreva a feature..."
+                            placeholder="Descreva a iniciativa..."
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                         />
@@ -88,7 +94,7 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose }) {
                             onChange={(e) => setStatus(e.target.value)}
                         >
                             {STATUS_OPTIONS.map(s => (
-                                <option key={s} value={s}>{s}</option>
+                                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
                             ))}
                         </select>
                     </div>

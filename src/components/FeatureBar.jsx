@@ -30,6 +30,7 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
     const [showTooltip, setShowTooltip] = useState(false);
     const barRef = useRef(null);
     const tooltipTimer = useRef(null);
+    const wasDragging = useRef(false);
 
     const pos = calculateBarPosition(feature.startDate, feature.endDate, year, visibleMonths);
     const displayPos = previewPos || pos;
@@ -101,6 +102,8 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
 
         const handleMouseUp = () => {
             setIsDragging(false);
+            wasDragging.current = true;
+            setTimeout(() => { wasDragging.current = false; }, 200);
             if (dragState) {
                 if (dragState.currentStart !== feature.startDate || dragState.currentEnd !== feature.endDate) {
                     onUpdateFeature(feature.id, {
@@ -140,8 +143,8 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
                 borderLeftWidth: '3px',
             }}
             onClick={(e) => {
-                if (!isDragging) {
-                    e.stopPropagation();
+                e.stopPropagation();
+                if (!isDragging && !wasDragging.current) {
                     onClick(feature);
                 }
             }}
