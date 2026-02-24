@@ -1,0 +1,163 @@
+# Board Manager — Sistema de Gestão de Roadmaps
+
+Sistema web para gerenciar roadmaps de times com visão por quarter. Design system glassmorphism, persistência localStorage, e gestão simples de usuários.
+
+## Tech Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Build | Vite |
+| UI | React 18 |
+| Estilo | Vanilla CSS — **Glassmorphism** |
+| Persistência | localStorage (JSON) |
+| Roteamento | React Router v6 |
+| Drag & Drop | HTML5 DnD API nativa |
+
+---
+
+## Design System — Glassmorphism
+
+> [!IMPORTANT]
+> Todo o design será baseado em **glassmorphism**: superfícies translúcidas com `backdrop-filter: blur()`, bordas sutis em `rgba`, sombras suaves, e gradientes de fundo vibrantes.
+
+### Princípios Visuais
+
+| Elemento | Tratamento |
+|---|---|
+| **Background** | Gradiente animado (mesh gradient) com tons de roxo, azul e dourado |
+| **Cards / Modais** | `background: rgba(255,255,255,0.08)`, `backdrop-filter: blur(20px)`, borda `rgba(255,255,255,0.15)` |
+| **Botões primários** | Gradiente dourado (#F5A623 → #F7C948) com glow sutil |
+| **Inputs** | Fundo glass translúcido, borda glow on focus |
+| **Tipografia** | Google Fonts — **Inter** (headings) + **Outfit** (body) |
+| **Dark Mode** | Padrão escuro com glass; modo claro com glass sobre fundo branco |
+| **Animações** | Fade-in, scale-up para modais; hover glow; skeleton loaders |
+
+---
+
+## Modelo de Dados
+
+```js
+User    → { id, name, email, password (hash simples), createdAt }
+Board   → { id, userId, title, visibility, createdAt }
+Lane    → { id, boardId, title, order }
+Feature → { id, laneId, title, description, status, tags: [{name, color}], startDate, endDate }
+```
+
+---
+
+## Proposed Changes
+
+### 1. Gestão de Usuários
+
+#### [NEW] [AuthContext.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/context/AuthContext.jsx)
+- Context + Provider para autenticação
+- Estado do usuário logado, funções `login`, `register`, `logout`
+- Persistência da sessão em localStorage
+
+#### [NEW] [Login.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/pages/Login.jsx)
+- Tela de login glassmorphism com campos email + senha
+- Link para registro
+- Validação de campos
+
+#### [NEW] [Register.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/pages/Register.jsx)
+- Tela de registro com nome, email, senha
+- Salva usuário no localStorage
+- Redireciona para Dashboard após registro
+
+#### [NEW] [ProtectedRoute.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/components/ProtectedRoute.jsx)
+- Wrapper que redireciona para `/login` se não autenticado
+
+---
+
+### 2. Design System & CSS
+
+#### [NEW] [index.css](file:///Users/elvisoliveira/_dev/Board%20Manager/src/index.css)
+- Custom properties para glassmorphism tokens
+- Background gradient animado global
+- Classes utilitárias: `.glass-card`, `.glass-input`, `.glass-button`, `.glass-modal`
+- Tema claro/escuro via `[data-theme]`
+- Keyframes para animações (fade-in, glow, gradient rotation)
+- Google Fonts import (Inter + Outfit)
+
+---
+
+### 3. Data Layer (Persistência)
+
+#### [NEW] [useBoards.js](file:///Users/elvisoliveira/_dev/Board%20Manager/src/hooks/useBoards.js)
+- Hook para CRUD completo de boards, lanes e features
+- Todas as operações persistem em localStorage automaticamente
+- Dados isolados por `userId` para multi-user
+
+#### [NEW] [data.js](file:///Users/elvisoliveira/_dev/Board%20Manager/src/utils/data.js)
+- Helpers de datas: cálculo de quarters, posição no grid, meses do ano
+
+---
+
+### 4. Dashboard
+
+#### [NEW] [Dashboard.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/pages/Dashboard.jsx)
+- Header glass: logo "Meus Boards", nome do usuário, toggle dark mode, botão Sair
+- Busca por ID + botão "Acessar"
+- Botão "+ Novo Board" (accent dourado)
+- Grid de glass-cards com: título, ID, visibilidade, data, botões editar/excluir
+- Modal glass para criar/editar board
+
+---
+
+### 5. Roadmap Timeline
+
+#### [NEW] [Roadmap.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/pages/Roadmap.jsx)
+- Header glass: seta voltar, título board, botões Filtros / + Lane / Compartilhar / Dark Mode / Sair
+- **Timeline Grid**: navegação por ano (Anterior / Próximo)
+  - Header: ano, Q1–Q4, jan–dez
+  - Linhas = lanes (objetivos) com botão "+"
+  - Barras horizontais = features (posição calculada por datas)
+
+#### [NEW] [FeatureBar.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/components/FeatureBar.jsx)
+- Barra glass posicionada via CSS (left/width calculados)
+- Drag horizontal (muda datas) e vertical (muda lane)
+- Clique abre modal de edição
+
+#### [NEW] [FeatureModal.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/components/FeatureModal.jsx)
+- Modal glass: Título*, Descrição, Status (dropdown), Tags (nome + cor), Datas início/fim
+- Botões: Excluir, Cancelar, Salvar
+
+---
+
+### 6. Routing & App Shell
+
+#### [NEW] [App.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/App.jsx)
+- Rotas: `/login`, `/register`, `/` (Dashboard), `/board/:id` (Roadmap)
+- Rotas protegidas via ProtectedRoute
+
+#### [NEW] [main.jsx](file:///Users/elvisoliveira/_dev/Board%20Manager/src/main.jsx)
+- Entry point com BrowserRouter + AuthProvider
+
+---
+
+## Features
+
+| Feature | Descrição |
+|---|---|
+| 🔐 Login / Registro | Gestão simples de usuários com localStorage |
+| 📋 Dashboard | Listar, criar, editar, excluir boards |
+| 🔍 Busca por ID | Navegar direto a um board |
+| 📅 Visão Quarterly | Timeline Q1–Q4 com meses |
+| 🎯 Lanes / Objetivos | Linhas editáveis por objetivo |
+| 📊 Features | Barras horizontais com datas |
+| 🏷️ Tags coloridas | Tags customizáveis |
+| 📝 Status | Not Started, On Going, Done, Blocked |
+| 🌙 Dark Mode | Toggle global glassmorphism |
+| 🔗 Compartilhar | Link do board |
+| ↔️ Drag & Drop | Arrastar features |
+| 🔧 Filtros | Por status e tag |
+| 💎 Glassmorphism | Design premium translúcido |
+
+---
+
+## Verification Plan
+
+### Browser Testing
+- Testar fluxo completo: register → login → criar board → adicionar lanes/features → drag → editar → dark mode
+- Verificar persistência após recarregar página
+- Capturar screenshots para walkthrough
