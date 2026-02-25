@@ -6,7 +6,13 @@ import { MONTHS } from '../utils/data';
 import FeatureBar, { STATUS_COLORS } from '../components/FeatureBar';
 import FeatureModal from '../components/FeatureModal';
 import ImportModal from '../components/ImportModal';
-import { ArrowLeft, Filter, Plus, Share2, Sun, Moon, LogOut, ChevronLeft, ChevronRight, GripVertical, Upload } from 'lucide-react';
+import TagManager from '../components/TagManager';
+import HealthIndicator from '../components/HealthIndicator';
+import OKRPanel from '../components/OKRPanel';
+import CapacityDashboard from '../components/CapacityDashboard';
+import RiskMatrix from '../components/RiskMatrix';
+import TeamManager from '../components/TeamManager';
+import { ArrowLeft, Filter, Plus, Share2, Sun, Moon, LogOut, ChevronLeft, ChevronRight, GripVertical, Upload, Tag, Trash2, X, Target, Users, Shield, BarChart3 } from 'lucide-react';
 
 const QUARTERS = [
     { label: 'Q1', months: [0, 1, 2] },
@@ -51,13 +57,34 @@ export default function Roadmap() {
     const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
     const [showFeatureModal, setShowFeatureModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
+    const [showTagManager, setShowTagManager] = useState(false);
+    const [showOKRPanel, setShowOKRPanel] = useState(false);
+    const [showCapacity, setShowCapacity] = useState(false);
+    const [showRiskMatrix, setShowRiskMatrix] = useState(false);
+    const [showTeamManager, setShowTeamManager] = useState(false);
     const [editingFeature, setEditingFeature] = useState(null);
     const [activeLaneId, setActiveLaneId] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
     const [filters, setFilters] = useState({ statuses: [], tags: [] });
     const [editingLaneId, setEditingLaneId] = useState(null);
     const [editingLaneTitle, setEditingLaneTitle] = useState('');
+    const [boardTags, setBoardTags] = useState([]);
+    const [confirmAction, setConfirmAction] = useState(null); // { message, onConfirm }
+    const [draggingLaneId, setDraggingLaneId] = useState(null);
+    const [dragOverLaneId, setDragOverLaneId] = useState(null);
     const filterRef = useRef(null);
+
+    // Load board tags
+    const fetchBoardTags = useCallback(async () => {
+        if (!boardId) return;
+        try {
+            const res = await fetch(`/api/tags?boardId=${boardId}`);
+            const data = await res.json();
+            setBoardTags(data);
+        } catch (e) { console.error(e); }
+    }, [boardId]);
+
+    useEffect(() => { fetchBoardTags(); }, [fetchBoardTags]);
 
     // Zoom state
     const [zoomLevel, setZoomLevel] = useState(2);
@@ -127,9 +154,42 @@ export default function Roadmap() {
     };
 
     const handleDeleteLane = (laneId) => {
-        if (confirm('Excluir este objetivo e todas as iniciativas?')) {
-            deleteLane(laneId);
+        setConfirmAction({
+            message: 'Excluir este objetivo e todas as iniciativas?',
+            onConfirm: () => { deleteLane(laneId); setConfirmAction(null); }
+        });
+    };
+
+    const handleLaneDragOver = (e, laneId) => {
+        e.preventDefault();
+        if (draggingLaneId && draggingLaneId !== laneId) {
+            setDragOverLaneId(laneId);
         }
+    };
+
+    const handleLaneDrop = async (e, targetLaneId) => {
+        e.preventDefault();
+        setDragOverLaneId(null);
+        const sourceLaneId = e.dataTransfer.getData('laneId');
+        if (!sourceLaneId || sourceLaneId === targetLaneId) return;
+
+        const sourceIdx = lanes.findIndex(l => l.id === sourceLaneId);
+        const targetIdx = lanes.findIndex(l => l.id === targetLaneId);
+        if (sourceIdx === -1 || targetIdx === -1) return;
+
+        const reordered = [...lanes];
+        const [moved] = reordered.splice(sourceIdx, 1);
+        reordered.splice(targetIdx, 0, moved);
+
+        for (let i = 0; i < reordered.length; i++) {
+            await fetch(`/api/lanes/${reordered[i].id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sort_order: i })
+            });
+        }
+        loadBoardData(boardId);
+        setDraggingLaneId(null);
     };
 
     const openCreateFeature = (laneId) => {
@@ -144,7 +204,26 @@ export default function Roadmap() {
         setShowFeatureModal(true);
     };
 
-    const handleSaveFeature = (featureData) => {
+    const handleSaveFeature = async (featureData) => {
+        // Sync any new tags to the board tags table
+        if (featureData.tags && featureData.tags.length > 0) {
+            for (const tag of featureData.tags) {
+                const exists = boardTags.find(bt => bt.name.toLowerCase() === tag.name.toLowerCase());
+                if (!exists) {
+                    try {
+                        await fetch('/api/tags', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ boardId, name: tag.name, color: tag.color }),
+                        });
+                    } catch (e) {
+                        // Ignore duplicates
+                    }
+                }
+            }
+            fetchBoardTags(); // Refresh board tags
+        }
+
         if (editingFeature && editingFeature.id) {
             updateFeature(editingFeature.id, featureData);
         } else {
@@ -155,10 +234,14 @@ export default function Roadmap() {
     };
 
     const handleDeleteFeature = (featureId) => {
-        if (confirm('Excluir esta iniciativa?')) {
-            deleteFeature(featureId);
-            setShowFeatureModal(false);
-        }
+        setConfirmAction({
+            message: 'Excluir esta iniciativa permanentemente?',
+            onConfirm: () => {
+                deleteFeature(featureId);
+                setShowFeatureModal(false);
+                setConfirmAction(null);
+            }
+        });
     };
 
     // Click on timeline to create a feature at that position
@@ -238,7 +321,7 @@ export default function Roadmap() {
     };
 
     // Import handler - creates lanes and features from CSV data
-    const handleImport = (rows) => {
+    const handleImport = async (rows) => {
         const laneMap = {};
         // Map existing lanes by title
         lanes.forEach(l => { laneMap[l.title.toLowerCase()] = l.id; });
@@ -250,13 +333,28 @@ export default function Roadmap() {
             if (laneMap[laneName.toLowerCase()]) {
                 laneId = laneMap[laneName.toLowerCase()];
             } else {
-                // Create new lane
-                const newLaneId = createLane(boardId, laneName);
-                laneMap[laneName.toLowerCase()] = newLaneId;
-                laneId = newLaneId;
+                // Create new lane (createLane is async and returns a lane object)
+                const newLane = await createLane(boardId, laneName);
+                laneMap[laneName.toLowerCase()] = newLane.id;
+                laneId = newLane.id;
             }
 
-            createFeature(laneId, {
+            // Sync tags to board-level tags table
+            if (row.tags && row.tags.length > 0) {
+                for (const tag of row.tags) {
+                    try {
+                        await fetch('/api/tags', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ boardId, name: tag.name, color: tag.color }),
+                        });
+                    } catch (e) {
+                        // Ignore duplicates
+                    }
+                }
+            }
+
+            await createFeature(laneId, {
                 title: row.title,
                 description: row.description,
                 status: row.status,
@@ -267,6 +365,7 @@ export default function Roadmap() {
         }
 
         setShowImportModal(false);
+        fetchBoardTags(); // Refresh board tags
         // Reload data from backend
         setTimeout(() => loadBoardData(boardId), 500);
     };
@@ -331,8 +430,23 @@ export default function Roadmap() {
                             </div>
                         )}
                     </div>
+                    <button className="btn btn-glass" onClick={() => setShowOKRPanel(true)}>
+                        <Target size={16} /> OKRs
+                    </button>
+                    <button className="btn btn-glass" onClick={() => setShowTeamManager(true)}>
+                        <Users size={16} /> Time
+                    </button>
+                    <button className="btn btn-glass" onClick={() => setShowCapacity(true)}>
+                        <BarChart3 size={16} /> Capacidade
+                    </button>
+                    <button className="btn btn-glass" onClick={() => setShowRiskMatrix(true)}>
+                        <Shield size={16} /> Riscos
+                    </button>
                     <button className="btn btn-glass" onClick={() => setShowImportModal(true)}>
                         <Upload size={16} /> Importar
+                    </button>
+                    <button className="btn btn-glass" onClick={() => setShowTagManager(true)}>
+                        <Tag size={16} /> Tags
                     </button>
                     <button className="btn btn-primary" onClick={handleAddLane}>
                         <Plus size={16} /> Lane
@@ -433,40 +547,69 @@ export default function Roadmap() {
                                     lanes.map(lane => {
                                         const features = getFilteredFeatures(lane.id);
                                         return (
-                                            <tr key={lane.id}>
+                                            <tr
+                                                key={lane.id}
+                                                className={`lane-row ${dragOverLaneId === lane.id ? 'lane-drag-over' : ''} ${draggingLaneId === lane.id ? 'lane-dragging' : ''}`}
+                                                onDragOver={(e) => handleLaneDragOver(e, lane.id)}
+                                                onDragLeave={() => setDragOverLaneId(null)}
+                                                onDrop={(e) => handleLaneDrop(e, lane.id)}
+                                            >
                                                 <td className="timeline-lane-name">
                                                     <div className="lane-name-content">
-                                                        <span className="drag-handle" title="Arrastar"><GripVertical size={14} /></span>
-                                                        {editingLaneId === lane.id ? (
-                                                            <input
-                                                                type="text"
-                                                                className="glass-input"
-                                                                value={editingLaneTitle}
-                                                                onChange={(e) => setEditingLaneTitle(e.target.value)}
-                                                                onBlur={() => handleLaneTitleSave(lane.id)}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter') handleLaneTitleSave(lane.id);
-                                                                    if (e.key === 'Escape') setEditingLaneId(null);
-                                                                }}
-                                                                autoFocus
-                                                                style={{ padding: '2px 4px', fontSize: '0.85rem' }}
-                                                            />
-                                                        ) : (
+                                                        <div className="lane-header-row">
                                                             <span
-                                                                className="lane-title"
-                                                                onDoubleClick={() => handleLaneDoubleClick(lane)}
-                                                                title="Duplo clique para editar"
+                                                                className="lane-drag-handle"
+                                                                draggable
+                                                                onDragStart={(e) => {
+                                                                    e.dataTransfer.setData('laneId', lane.id);
+                                                                    e.dataTransfer.effectAllowed = 'move';
+                                                                    setDraggingLaneId(lane.id);
+                                                                }}
+                                                                onDragEnd={() => setDraggingLaneId(null)}
+                                                                title="Arrastar para reordenar"
                                                             >
-                                                                {lane.title}
+                                                                <GripVertical size={14} />
                                                             </span>
-                                                        )}
-                                                        <button
-                                                            className="lane-add-btn"
-                                                            onClick={() => openCreateFeature(lane.id)}
-                                                            title="Adicionar iniciativa"
-                                                        >
-                                                            <Plus size={14} />
-                                                        </button>
+                                                            {editingLaneId === lane.id ? (
+                                                                <input
+                                                                    type="text"
+                                                                    className="glass-input lane-edit-input"
+                                                                    value={editingLaneTitle}
+                                                                    onChange={(e) => setEditingLaneTitle(e.target.value)}
+                                                                    onBlur={() => handleLaneTitleSave(lane.id)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') handleLaneTitleSave(lane.id);
+                                                                        if (e.key === 'Escape') setEditingLaneId(null);
+                                                                    }}
+                                                                    autoFocus
+                                                                />
+                                                            ) : (
+                                                                <span
+                                                                    className="lane-title"
+                                                                    onDoubleClick={() => handleLaneDoubleClick(lane)}
+                                                                    title="Duplo clique para editar"
+                                                                >
+                                                                    <HealthIndicator features={getFeatures(lane.id)} />
+                                                                    {lane.title}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="lane-actions">
+                                                            <button
+                                                                className="lane-action-btn lane-action-add"
+                                                                onClick={() => openCreateFeature(lane.id)}
+                                                                title="Adicionar iniciativa"
+                                                            >
+                                                                <Plus size={13} /> Iniciativa
+                                                            </button>
+                                                            <button
+                                                                className="lane-action-btn lane-action-danger"
+                                                                onClick={() => handleDeleteLane(lane.id)}
+                                                                title="Excluir objetivo"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td
@@ -516,6 +659,7 @@ export default function Roadmap() {
                     onSave={handleSaveFeature}
                     onDelete={handleDeleteFeature}
                     onClose={() => { setShowFeatureModal(false); setEditingFeature(null); }}
+                    boardTags={boardTags}
                 />
             )}
 
@@ -526,6 +670,74 @@ export default function Roadmap() {
                     onClose={() => setShowImportModal(false)}
                     existingLanes={lanes}
                 />
+            )}
+
+            {/* Tag Manager Modal */}
+            {showTagManager && (
+                <TagManager
+                    boardId={boardId}
+                    onClose={() => { setShowTagManager(false); fetchBoardTags(); }}
+                />
+            )}
+
+            {/* OKR Panel */}
+            {showOKRPanel && (
+                <OKRPanel
+                    boardId={boardId}
+                    lanes={lanes}
+                    onClose={() => setShowOKRPanel(false)}
+                />
+            )}
+
+            {/* Team Manager */}
+            {showTeamManager && (
+                <TeamManager
+                    boardId={boardId}
+                    onClose={() => setShowTeamManager(false)}
+                />
+            )}
+
+            {/* Capacity Dashboard */}
+            {showCapacity && (
+                <CapacityDashboard
+                    boardId={boardId}
+                    year={year}
+                    onClose={() => setShowCapacity(false)}
+                />
+            )}
+
+            {/* Risk Matrix */}
+            {showRiskMatrix && (
+                <RiskMatrix
+                    boardId={boardId}
+                    onClose={() => setShowRiskMatrix(false)}
+                />
+            )}
+
+            {/* Confirmation Modal */}
+            {confirmAction && (
+                <div className="modal-overlay" onClick={() => setConfirmAction(null)} style={{ zIndex: 1001 }}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h2>Confirmar Exclusão</h2>
+                            <button className="modal-close" onClick={() => setConfirmAction(null)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
+                                {confirmAction.message}
+                            </p>
+                        </div>
+                        <div className="modal-footer">
+                            <div />
+                            <div className="modal-footer-right">
+                                <button className="btn btn-glass" onClick={() => setConfirmAction(null)}>Cancelar</button>
+                                <button className="btn btn-danger" onClick={confirmAction.onConfirm}>
+                                    <Trash2 size={16} /> Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </>
     );

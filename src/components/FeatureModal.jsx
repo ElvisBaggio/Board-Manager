@@ -9,36 +9,46 @@ const STATUS_LABELS = {
     'Blocked': 'Bloqueado',
 };
 
-export default function FeatureModal({ feature, onSave, onDelete, onClose }) {
+export default function FeatureModal({ feature, onSave, onDelete, onClose, boardTags = [] }) {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState('Not Started');
-    const [tags, setTags] = useState([]);
+    const [selectedTags, setSelectedTags] = useState([]);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [tagName, setTagName] = useState('');
-    const [tagColor, setTagColor] = useState('#3498db');
+    const [newTagName, setNewTagName] = useState('');
+    const [newTagColor, setNewTagColor] = useState('#3498db');
 
     useEffect(() => {
         if (feature) {
             setTitle(feature.title || '');
             setDescription(feature.description || '');
             setStatus(feature.status || 'Not Started');
-            setTags(feature.tags || []);
+            setSelectedTags(feature.tags || []);
             setStartDate(feature.startDate || '');
             setEndDate(feature.endDate || '');
         }
     }, [feature]);
 
-    const handleAddTag = () => {
-        if (!tagName.trim()) return;
-        setTags([...tags, { name: tagName.trim(), color: tagColor }]);
-        setTagName('');
-        setTagColor('#3498db');
+    const handleToggleTag = (tag) => {
+        const exists = selectedTags.find(t => t.name === tag.name);
+        if (exists) {
+            setSelectedTags(selectedTags.filter(t => t.name !== tag.name));
+        } else {
+            setSelectedTags([...selectedTags, { name: tag.name, color: tag.color }]);
+        }
+    };
+
+    const handleAddInlineTag = () => {
+        if (!newTagName.trim()) return;
+        if (selectedTags.find(t => t.name === newTagName.trim())) return;
+        setSelectedTags([...selectedTags, { name: newTagName.trim(), color: newTagColor }]);
+        setNewTagName('');
+        setNewTagColor('#3498db');
     };
 
     const handleRemoveTag = (idx) => {
-        setTags(tags.filter((_, i) => i !== idx));
+        setSelectedTags(selectedTags.filter((_, i) => i !== idx));
     };
 
     const handleSave = () => {
@@ -47,13 +57,16 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose }) {
             title: title.trim(),
             description,
             status,
-            tags,
+            tags: selectedTags,
             startDate,
             endDate,
         });
     };
 
     const isEdit = feature && feature.id;
+
+    // Separate available tags (from board) that are not already selected
+    const availableTags = boardTags.filter(bt => !selectedTags.find(st => st.name === bt.name));
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -101,28 +114,11 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose }) {
 
                     <div className="form-group">
                         <label>Tags</label>
-                        <div className="tags-input-row">
-                            <input
-                                type="text"
-                                className="glass-input"
-                                placeholder="Nome da tag"
-                                value={tagName}
-                                onChange={(e) => setTagName(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                            />
-                            <input
-                                type="color"
-                                className="tag-color-input"
-                                value={tagColor}
-                                onChange={(e) => setTagColor(e.target.value)}
-                            />
-                            <button className="btn btn-primary" onClick={handleAddTag} style={{ flexShrink: 0 }}>
-                                Adicionar
-                            </button>
-                        </div>
-                        {tags.length > 0 && (
-                            <div className="tags-list">
-                                {tags.map((tag, idx) => (
+
+                        {/* Selected tags */}
+                        {selectedTags.length > 0 && (
+                            <div className="tags-list" style={{ marginBottom: '8px' }}>
+                                {selectedTags.map((tag, idx) => (
                                     <span
                                         key={idx}
                                         className="tag"
@@ -138,6 +134,53 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose }) {
                                 ))}
                             </div>
                         )}
+
+                        {/* Available board tags to pick from */}
+                        {availableTags.length > 0 && (
+                            <div style={{ marginBottom: '8px' }}>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                                    Tags disponíveis (clique para adicionar):
+                                </span>
+                                <div className="tags-list">
+                                    {availableTags.map((tag) => (
+                                        <span
+                                            key={tag.id || tag.name}
+                                            className="tag tag-pickable"
+                                            style={{
+                                                background: `${tag.color}11`,
+                                                color: tag.color,
+                                                border: `1px dashed ${tag.color}44`,
+                                                cursor: 'pointer',
+                                            }}
+                                            onClick={() => handleToggleTag(tag)}
+                                        >
+                                            + {tag.name}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Create new inline tag */}
+                        <div className="tags-input-row">
+                            <input
+                                type="text"
+                                className="glass-input"
+                                placeholder="Criar tag nova"
+                                value={newTagName}
+                                onChange={(e) => setNewTagName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddInlineTag())}
+                            />
+                            <input
+                                type="color"
+                                className="tag-color-input"
+                                value={newTagColor}
+                                onChange={(e) => setNewTagColor(e.target.value)}
+                            />
+                            <button className="btn btn-primary" onClick={handleAddInlineTag} style={{ flexShrink: 0 }}>
+                                Adicionar
+                            </button>
+                        </div>
                     </div>
 
                     <div className="form-row">

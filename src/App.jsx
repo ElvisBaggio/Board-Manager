@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Roadmap from './pages/Roadmap';
+import AdminPanel from './pages/AdminPanel';
 
 export default function App() {
     return (
@@ -26,6 +27,14 @@ export default function App() {
                     element={
                         <ProtectedRoute>
                             <Roadmap />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/admin"
+                    element={
+                        <ProtectedRoute>
+                            <AdminPanel />
                         </ProtectedRoute>
                     }
                 />

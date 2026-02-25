@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBoards } from '../hooks/useBoards';
 import { formatCreatedDate } from '../utils/data';
-import { Sun, Moon, LogOut, Plus, ClipboardList, Lock, Edit2, Trash2, Globe } from 'lucide-react';
+import { Sun, Moon, LogOut, Plus, ClipboardList, Lock, Edit2, Globe, ShieldCheck, Trash2, X } from 'lucide-react';
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
@@ -18,6 +18,7 @@ export default function Dashboard() {
     const [editingBoard, setEditingBoard] = useState(null);
     const [modalTitle, setModalTitle] = useState('');
     const [modalVisibility, setModalVisibility] = useState('Privado');
+    const [confirmDelete, setConfirmDelete] = useState(null); // board id to confirm delete
 
     const toggleTheme = () => {
         const next = theme === 'dark' ? 'light' : 'dark';
@@ -58,10 +59,17 @@ export default function Dashboard() {
         setShowModal(false);
     };
 
-    const handleDelete = (e, boardId) => {
-        e.stopPropagation();
-        if (confirm('Tem certeza que deseja excluir este board?')) {
-            deleteBoard(boardId);
+    const handleDeleteFromModal = () => {
+        if (editingBoard) {
+            setConfirmDelete(editingBoard.id);
+        }
+    };
+
+    const executeDelete = () => {
+        if (confirmDelete) {
+            deleteBoard(confirmDelete);
+            setConfirmDelete(null);
+            setShowModal(false);
         }
     };
 
@@ -90,6 +98,11 @@ export default function Dashboard() {
                         <div className="user-avatar">{user.name.charAt(0).toUpperCase()}</div>
                         <span>{user.name}</span>
                     </div>
+                    {user.role === 'admin' && (
+                        <button className="btn btn-glass" onClick={() => navigate('/admin')}>
+                            <ShieldCheck size={16} /> Admin
+                        </button>
+                    )}
                     <button className="theme-toggle" onClick={toggleTheme} title="Alternar tema">
                         {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                     </button>
@@ -150,9 +163,6 @@ export default function Dashboard() {
                                         <button className="btn-icon" onClick={(e) => openEdit(e, board)} title="Editar">
                                             <Edit2 size={16} />
                                         </button>
-                                        <button className="btn-icon" onClick={(e) => handleDelete(e, board.id)} title="Excluir" style={{ color: 'var(--danger)' }}>
-                                            <Trash2 size={16} />
-                                        </button>
                                     </div>
                                 </div>
                                 <div className="board-card-date">
@@ -164,13 +174,13 @@ export default function Dashboard() {
                 )}
             </div>
 
-            {/* Modal */}
+            {/* Board Edit/Create Modal */}
             {showModal && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingBoard ? 'Editar Board' : 'Novo Board'}</h2>
-                            <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+                            <button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button>
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
@@ -197,10 +207,42 @@ export default function Dashboard() {
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <div />
+                            <div>
+                                {editingBoard && (
+                                    <button className="btn btn-danger" onClick={handleDeleteFromModal}>
+                                        <Trash2 size={16} /> Excluir
+                                    </button>
+                                )}
+                            </div>
                             <div className="modal-footer-right">
                                 <button className="btn btn-glass" onClick={() => setShowModal(false)}>Cancelar</button>
                                 <button className="btn btn-primary" onClick={handleSave}>Salvar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {confirmDelete && (
+                <div className="modal-overlay" onClick={() => setConfirmDelete(null)} style={{ zIndex: 1001 }}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h2>Confirmar Exclusão</h2>
+                            <button className="modal-close" onClick={() => setConfirmDelete(null)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
+                                Tem certeza que deseja excluir este board? Todos os objetivos e iniciativas serão removidos permanentemente.
+                            </p>
+                        </div>
+                        <div className="modal-footer">
+                            <div />
+                            <div className="modal-footer-right">
+                                <button className="btn btn-glass" onClick={() => setConfirmDelete(null)}>Cancelar</button>
+                                <button className="btn btn-danger" onClick={executeDelete}>
+                                    <Trash2 size={16} /> Excluir Board
+                                </button>
                             </div>
                         </div>
                     </div>

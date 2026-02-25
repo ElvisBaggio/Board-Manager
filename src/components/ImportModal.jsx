@@ -211,6 +211,7 @@ Minha Iniciativa;Descrição aqui;On Going;2026-03-01;2026-06-30;UX;Tag1,Tag2`}
                                             <th>Início</th>
                                             <th>Fim</th>
                                             <th>Lane</th>
+                                            <th>Tags</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -221,6 +222,7 @@ Minha Iniciativa;Descrição aqui;On Going;2026-03-01;2026-06-30;UX;Tag1,Tag2`}
                                                 <td>{row.startDate}</td>
                                                 <td>{row.endDate}</td>
                                                 <td>{row.laneName || '(padrão)'}</td>
+                                                <td>{row.tags && row.tags.length > 0 ? row.tags.map(t => t.name).join(', ') : '—'}</td>
                                             </tr>
                                         ))}
                                     </tbody>

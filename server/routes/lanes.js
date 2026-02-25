@@ -4,13 +4,16 @@ import db from '../db.js';
 const router = express.Router();
 
 // Get all lanes for a board
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
     const boardId = req.query.boardId;
     if (!boardId) return res.status(400).json({ error: 'boardId obrigatório' });
 
     try {
-        const stmt = db.prepare('SELECT * FROM lanes WHERE board_id = ? ORDER BY sort_order ASC, created_at ASC');
-        const rows = stmt.all(boardId);
+        const rows = await db('lanes')
+            .where('board_id', boardId)
+            .orderBy('sort_order', 'asc')
+            .orderBy('created_at', 'asc');
+
         const lanes = rows.map(l => ({
             ...l,
             boardId: l.board_id,
@@ -18,55 +21,58 @@ router.get('/', (req, res) => {
         }));
         res.json(lanes);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Erro ao buscar lanes' });
     }
 });
 
 // Create a lane
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
     const { id, boardId, title } = req.body;
     try {
-        const stmt = db.prepare('INSERT INTO lanes (id, board_id, title) VALUES (?, ?, ?)');
-        stmt.run(id, boardId, title);
+        await db('lanes').insert({
+            id,
+            board_id: boardId,
+            title,
+        });
         res.status(201).json({ id, boardId, title });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Erro ao criar lane' });
     }
 });
 
 // Update a lane
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { title, sort_order } = req.body;
     try {
-        // Build dynamic query
-        const updates = [];
-        const params = [];
-        if (title !== undefined) { updates.push('title = ?'); params.push(title); }
-        if (sort_order !== undefined) { updates.push('sort_order = ?'); params.push(sort_order); }
+        const updateData = {};
+        if (title !== undefined) updateData.title = title;
+        if (sort_order !== undefined) updateData.sort_order = sort_order;
 
-        if (updates.length === 0) return res.status(400).json({ error: 'Nada para atualizar' });
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ error: 'Nada para atualizar' });
+        }
 
-        params.push(id);
-        const stmt = db.prepare(`UPDATE lanes SET ${updates.join(', ')} WHERE id = ?`);
-        const result = stmt.run(...params);
-
-        if (result.changes === 0) return res.status(404).json({ error: 'Lane não encontrada' });
+        const count = await db('lanes').where('id', id).update(updateData);
+        if (count === 0) return res.status(404).json({ error: 'Lane não encontrada' });
         res.json({ success: true });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Erro ao atualizar lane' });
     }
 });
 
 // Delete a lane
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const stmt = db.prepare('DELETE FROM lanes WHERE id = ?');
-        const result = stmt.run(id);
-        if (result.changes === 0) return res.status(404).json({ error: 'Lane não encontrada' });
+        const count = await db('lanes').where('id', id).del();
+        if (count === 0) return res.status(404).json({ error: 'Lane não encontrada' });
         res.json({ success: true });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Erro ao deletar lane' });
     }
 });

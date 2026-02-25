@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { GripVertical } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { calculateBarPosition, formatDate } from '../utils/data';
 
 const STATUS_COLORS = {
@@ -16,11 +16,66 @@ const STATUS_CLASSES = {
     'Blocked': 'status-blocked',
 };
 
-// Add delta days to a YYYY-MM-DD string
+const MIN_DRAG_DISTANCE = 5; // Minimum pixels to move before considering it a drag
+
 function addDays(dateStr, days) {
     const d = new Date(dateStr + 'T00:00:00');
     d.setDate(d.getDate() + days);
     return d.toISOString().split('T')[0];
+}
+
+function FeatureTooltip({ feature, barRef, colors }) {
+    const [pos, setPos] = useState({ top: 0, left: 0 });
+
+    useEffect(() => {
+        if (barRef.current) {
+            const rect = barRef.current.getBoundingClientRect();
+            setPos({
+                top: rect.top - 10 + window.scrollY,
+                left: rect.left + rect.width / 2 + window.scrollX,
+            });
+        }
+    }, [barRef]);
+
+    const startFormatted = formatDate(feature.startDate);
+    const endFormatted = formatDate(feature.endDate);
+
+    return createPortal(
+        <div
+            className="feature-tooltip"
+            style={{
+                position: 'absolute',
+                top: `${pos.top}px`,
+                left: `${pos.left}px`,
+                transform: 'translate(-50%, -100%)',
+                bottom: 'auto',
+            }}
+        >
+            <div className="feature-tooltip-title">{feature.title}</div>
+            {feature.description && (
+                <div className="feature-tooltip-desc">{feature.description}</div>
+            )}
+            <div className="feature-tooltip-meta">
+                <span className="feature-tooltip-status">
+                    <span className="feature-tooltip-dot" style={{ background: colors.dot }} />
+                    {feature.status}
+                </span>
+                <span className="feature-tooltip-dates">
+                    {startFormatted} → {endFormatted}
+                </span>
+            </div>
+            {feature.tags && feature.tags.length > 0 && (
+                <div className="feature-tooltip-tags">
+                    {feature.tags.map((tag, i) => (
+                        <span key={i} className="feature-tooltip-tag" style={{ background: tag.color || 'var(--accent)' }}>
+                            {tag.name || tag}
+                        </span>
+                    ))}
+                </div>
+            )}
+        </div>,
+        document.body
+    );
 }
 
 export default function FeatureBar({ feature, year, onClick, onUpdateFeature, visibleMonths }) {
@@ -30,22 +85,40 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
     const [showTooltip, setShowTooltip] = useState(false);
     const barRef = useRef(null);
     const tooltipTimer = useRef(null);
-    const wasDragging = useRef(false);
+    const didDrag = useRef(false);
+    const pendingDrag = useRef(null);
 
     const pos = calculateBarPosition(feature.startDate, feature.endDate, year, visibleMonths);
     const displayPos = previewPos || pos;
     const colors = STATUS_COLORS[feature.status] || STATUS_COLORS['Not Started'];
 
-    const handleMouseDown = (e, type) => {
+    const startDrag = (e, type) => {
         e.stopPropagation();
-        e.preventDefault();
         setShowTooltip(false);
 
         if (!barRef.current) return;
         const container = barRef.current.parentElement;
         const containerWidth = container.getBoundingClientRect().width;
 
-        setDragState({
+        // For resize handles, start drag immediately
+        if (type !== 'move') {
+            e.preventDefault();
+            didDrag.current = true;
+            setDragState({
+                type,
+                startX: e.clientX,
+                containerWidth,
+                initialStart: feature.startDate,
+                initialEnd: feature.endDate,
+                currentStart: feature.startDate,
+                currentEnd: feature.endDate
+            });
+            setIsDragging(true);
+            return;
+        }
+
+        // For move, defer drag until minimum distance is reached
+        pendingDrag.current = {
             type,
             startX: e.clientX,
             containerWidth,
@@ -53,8 +126,26 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
             initialEnd: feature.endDate,
             currentStart: feature.startDate,
             currentEnd: feature.endDate
-        });
-        setIsDragging(true);
+        };
+        didDrag.current = false;
+
+        const onMove = (me) => {
+            const dist = Math.abs(me.clientX - pendingDrag.current.startX);
+            if (dist >= MIN_DRAG_DISTANCE && !didDrag.current) {
+                didDrag.current = true;
+                setDragState({ ...pendingDrag.current });
+                setIsDragging(true);
+            }
+        };
+
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+            pendingDrag.current = null;
+        };
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
     };
 
     const handleMouseEnter = () => {
@@ -70,7 +161,6 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
     useEffect(() => {
         if (!isDragging) return;
 
-        // Calculate how many days are visible in the current zoom
         const totalVisibleMonths = visibleMonths ? visibleMonths.length : 12;
         const approxDays = totalVisibleMonths * 30.44;
 
@@ -102,8 +192,6 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
 
         const handleMouseUp = () => {
             setIsDragging(false);
-            wasDragging.current = true;
-            setTimeout(() => { wasDragging.current = false; }, 200);
             if (dragState) {
                 if (dragState.currentStart !== feature.startDate || dragState.currentEnd !== feature.endDate) {
                     onUpdateFeature(feature.id, {
@@ -126,9 +214,6 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
 
     if (!displayPos) return null;
 
-    const startFormatted = formatDate(feature.startDate);
-    const endFormatted = formatDate(feature.endDate);
-
     return (
         <div
             ref={barRef}
@@ -136,7 +221,7 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
             style={{
                 left: displayPos.left,
                 width: displayPos.width,
-                cursor: dragState?.type === 'move' ? 'grabbing' : 'pointer',
+                cursor: isDragging ? 'grabbing' : 'pointer',
                 opacity: isDragging ? 0.8 : 1,
                 zIndex: isDragging ? 20 : (showTooltip ? 15 : 10),
                 borderLeftColor: colors.dot,
@@ -144,17 +229,17 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
             }}
             onClick={(e) => {
                 e.stopPropagation();
-                if (!isDragging && !wasDragging.current) {
+                if (!didDrag.current) {
                     onClick(feature);
                 }
             }}
-            onMouseDown={(e) => handleMouseDown(e, 'move')}
+            onMouseDown={(e) => startDrag(e, 'move')}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
             <div
                 className="resize-handle left"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-left')}
+                onMouseDown={(e) => startDrag(e, 'resize-left')}
             />
 
             <div className="feature-bar-content">
@@ -173,35 +258,12 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
 
             <div
                 className="resize-handle right"
-                onMouseDown={(e) => handleMouseDown(e, 'resize-right')}
+                onMouseDown={(e) => startDrag(e, 'resize-right')}
             />
 
-            {/* Hover Tooltip */}
+            {/* Tooltip rendered via portal to avoid overflow clipping */}
             {showTooltip && !isDragging && (
-                <div className="feature-tooltip">
-                    <div className="feature-tooltip-title">{feature.title}</div>
-                    {feature.description && (
-                        <div className="feature-tooltip-desc">{feature.description}</div>
-                    )}
-                    <div className="feature-tooltip-meta">
-                        <span className="feature-tooltip-status">
-                            <span className="feature-tooltip-dot" style={{ background: colors.dot }} />
-                            {feature.status}
-                        </span>
-                        <span className="feature-tooltip-dates">
-                            {startFormatted} → {endFormatted}
-                        </span>
-                    </div>
-                    {feature.tags && feature.tags.length > 0 && (
-                        <div className="feature-tooltip-tags">
-                            {feature.tags.map((tag, i) => (
-                                <span key={i} className="feature-tooltip-tag" style={{ background: tag.color || 'var(--accent)' }}>
-                                    {tag.name || tag}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <FeatureTooltip feature={feature} barRef={barRef} colors={colors} />
             )}
         </div>
     );
