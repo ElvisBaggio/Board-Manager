@@ -1,7 +1,8 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBoards } from '../hooks/useBoards';
+import { useStrategicChoices } from '../hooks/useStrategicChoices';
 import { MONTHS } from '../utils/data';
 import FeatureBar, { STATUS_COLORS } from '../components/FeatureBar';
 import FeatureModal from '../components/FeatureModal';
@@ -12,7 +13,8 @@ import OKRPanel from '../components/OKRPanel';
 import CapacityDashboard from '../components/CapacityDashboard';
 import RiskMatrix from '../components/RiskMatrix';
 import TeamManager from '../components/TeamManager';
-import { ArrowLeft, Filter, Plus, Share2, Sun, Moon, LogOut, ChevronLeft, ChevronRight, GripVertical, Upload, Tag, Trash2, X, Target, Users, Shield, BarChart3 } from 'lucide-react';
+import BoardHeader from '../components/BoardHeader';
+import { Filter, Plus, Share2, ChevronLeft, ChevronRight, GripVertical, Upload, Tag, Trash2, X, Target, Users, Shield, BarChart3 } from 'lucide-react';
 
 const QUARTERS = [
     { label: 'Q1', months: [0, 1, 2] },
@@ -41,7 +43,8 @@ export default function Roadmap() {
     const {
         getBoard, getLanes, getFeatures, createLane, updateLane, deleteLane,
         createFeature, updateFeature, deleteFeature, loadBoardData
-    } = useBoards(user.id);
+    } = useBoards(user?.id);
+    const { choices, fetchChoices } = useStrategicChoices(boardId);
 
     const board = getBoard(boardId);
     const lanes = getLanes(boardId);
@@ -50,11 +53,11 @@ export default function Roadmap() {
     useEffect(() => {
         if (boardId) {
             loadBoardData(boardId);
+            fetchChoices();
         }
-    }, [boardId, loadBoardData]);
+    }, [boardId, loadBoardData, fetchChoices]);
 
     const [year, setYear] = useState(new Date().getFullYear());
-    const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
     const [showFeatureModal, setShowFeatureModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
     const [showTagManager, setShowTagManager] = useState(false);
@@ -128,12 +131,6 @@ export default function Roadmap() {
 
     const navNextQuarter = () => {
         if (canNavNext) setStartQuarter(s => s + 1);
-    };
-
-    const toggleTheme = () => {
-        const next = theme === 'dark' ? 'light' : 'dark';
-        setTheme(next);
-        document.documentElement.setAttribute('data-theme', next);
     };
 
     const handleAddLane = () => {
@@ -386,82 +383,153 @@ export default function Roadmap() {
         );
     }
 
+    const renderLaneRow = (lane) => {
+        const features = getFilteredFeatures(lane.id);
+        return (
+            <tr
+                key={lane.id}
+                className={`lane-row ${dragOverLaneId === lane.id ? 'lane-drag-over' : ''} ${draggingLaneId === lane.id ? 'lane-dragging' : ''}`}
+                onDragOver={(e) => handleLaneDragOver(e, lane.id)}
+                onDragLeave={() => setDragOverLaneId(null)}
+                onDrop={(e) => handleLaneDrop(e, lane.id)}
+            >
+                <td className="timeline-lane-name">
+                    <div className="lane-name-content">
+                        <div className="lane-header-row">
+                            <span
+                                className="lane-drag-handle"
+                                draggable
+                                onDragStart={(e) => {
+                                    e.dataTransfer.setData('laneId', lane.id);
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    setDraggingLaneId(lane.id);
+                                }}
+                                onDragEnd={() => setDraggingLaneId(null)}
+                                title="Arrastar para reordenar"
+                            >
+                                <GripVertical size={14} />
+                            </span>
+                            {editingLaneId === lane.id ? (
+                                <input
+                                    type="text"
+                                    className="glass-input lane-edit-input"
+                                    value={editingLaneTitle}
+                                    onChange={(e) => setEditingLaneTitle(e.target.value)}
+                                    onBlur={() => handleLaneTitleSave(lane.id)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleLaneTitleSave(lane.id);
+                                        if (e.key === 'Escape') setEditingLaneId(null);
+                                    }}
+                                    autoFocus
+                                />
+                            ) : (
+                                <span
+                                    className="lane-title"
+                                    onDoubleClick={() => handleLaneDoubleClick(lane)}
+                                    title="Duplo clique para editar"
+                                >
+                                    <HealthIndicator features={getFeatures(lane.id)} />
+                                    {lane.title}
+                                </span>
+                            )}
+                        </div>
+                        <div className="lane-actions">
+                            <button
+                                className="lane-action-btn lane-action-add"
+                                onClick={() => openCreateFeature(lane.id)}
+                                title="Adicionar iniciativa"
+                            >
+                                <Plus size={13} /> Iniciativa
+                            </button>
+                            <button
+                                className="lane-action-btn lane-action-danger"
+                                onClick={() => handleDeleteLane(lane.id)}
+                                title="Excluir objetivo"
+                            >
+                                <Trash2 size={13} />
+                            </button>
+                        </div>
+                    </div>
+                </td>
+                <td
+                    colSpan={visibleMonths.length}
+                    className="timeline-lane-content"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, lane.id)}
+                    onClick={(e) => handleTimelineClick(e, lane.id)}
+                    title="Clique para criar uma iniciativa"
+                    style={{ cursor: 'crosshair' }}
+                >
+                    {features.map(feature => (
+                        <FeatureBar
+                            key={feature.id}
+                            feature={feature}
+                            year={year}
+                            onClick={openEditFeature}
+                            onUpdateFeature={updateFeature}
+                            visibleMonths={visibleMonths}
+                        />
+                    ))}
+                </td>
+            </tr>
+        );
+    };
+
     return (
         <>
             {/* Header */}
-            <header className="app-header">
-                <div className="app-header-left">
-                    <button
-                        className="btn-icon"
-                        onClick={() => navigate('/')}
-                        title="Voltar"
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h1 style={{ fontSize: '1.2rem', color: 'var(--accent)' }}>{board.title}</h1>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ID: #{boardId.slice(0, 6)}</span>
-                    </div>
-                </div>
-                <div className="app-header-right">
-                    <div style={{ position: 'relative' }} ref={filterRef}>
-                        <button className="btn btn-glass" onClick={() => setShowFilters(!showFilters)}>
-                            <Filter size={16} /> Filtros
-                            {filters.statuses.length > 0 && (
-                                <span className="filter-badge">{filters.statuses.length}</span>
-                            )}
-                        </button>
-                        {showFilters && (
-                            <div className="filter-panel glass-surface">
-                                <div className="filter-section">
-                                    <div className="filter-section-title">Status</div>
-                                    {['Not Started', 'On Going', 'Done', 'Blocked'].map(status => (
-                                        <label key={status} className="filter-option">
-                                            <input
-                                                type="checkbox"
-                                                checked={filters.statuses.includes(status)}
-                                                onChange={() => toggleStatusFilter(status)}
-                                            />
-                                            <span className="filter-status-dot" style={{ background: STATUS_COLORS[status].dot }} />
-                                            {STATUS_LABELS[status]}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+            <BoardHeader board={board} boardId={boardId} currentView="roadmap">
+                <div style={{ position: 'relative' }} ref={filterRef}>
+                    <button className="btn btn-glass" onClick={() => setShowFilters(!showFilters)}>
+                        <Filter size={16} /> Filtros
+                        {filters.statuses.length > 0 && (
+                            <span className="filter-badge">{filters.statuses.length}</span>
                         )}
-                    </div>
-                    <button className="btn btn-glass" onClick={() => setShowOKRPanel(true)}>
-                        <Target size={16} /> OKRs
                     </button>
-                    <button className="btn btn-glass" onClick={() => setShowTeamManager(true)}>
-                        <Users size={16} /> Time
-                    </button>
-                    <button className="btn btn-glass" onClick={() => setShowCapacity(true)}>
-                        <BarChart3 size={16} /> Capacidade
-                    </button>
-                    <button className="btn btn-glass" onClick={() => setShowRiskMatrix(true)}>
-                        <Shield size={16} /> Riscos
-                    </button>
-                    <button className="btn btn-glass" onClick={() => setShowImportModal(true)}>
-                        <Upload size={16} /> Importar
-                    </button>
-                    <button className="btn btn-glass" onClick={() => setShowTagManager(true)}>
-                        <Tag size={16} /> Tags
-                    </button>
-                    <button className="btn btn-primary" onClick={handleAddLane}>
-                        <Plus size={16} /> Lane
-                    </button>
-                    <button className="btn btn-glass" onClick={handleShare}>
-                        <Share2 size={16} /> Compartilhar
-                    </button>
-                    <button className="theme-toggle" onClick={toggleTheme} title="Alternar tema">
-                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
-                    <button className="btn btn-glass" onClick={handleLogout}>
-                        <LogOut size={16} /> Sair
-                    </button>
+                    {showFilters && (
+                        <div className="filter-panel glass-surface">
+                            <div className="filter-section">
+                                <div className="filter-section-title">Status</div>
+                                {['Not Started', 'On Going', 'Done', 'Blocked'].map(status => (
+                                    <label key={status} className="filter-option">
+                                        <input
+                                            type="checkbox"
+                                            checked={filters.statuses.includes(status)}
+                                            onChange={() => toggleStatusFilter(status)}
+                                        />
+                                        <span className="filter-status-dot" style={{ background: STATUS_COLORS[status].dot }} />
+                                        {STATUS_LABELS[status]}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </header>
+                <button className="btn btn-glass" onClick={() => setShowOKRPanel(true)} title="OKRs">
+                    <Target size={16} />
+                </button>
+                <button className="btn btn-glass" onClick={() => setShowTeamManager(true)} title="Time">
+                    <Users size={16} />
+                </button>
+                <button className="btn btn-glass" onClick={() => setShowCapacity(true)} title="Capacidade">
+                    <BarChart3 size={16} />
+                </button>
+                <button className="btn btn-glass" onClick={() => setShowRiskMatrix(true)} title="Riscos">
+                    <Shield size={16} />
+                </button>
+                <button className="btn btn-glass" onClick={() => setShowImportModal(true)} title="Importar">
+                    <Upload size={16} />
+                </button>
+                <button className="btn btn-glass" onClick={() => setShowTagManager(true)} title="Tags">
+                    <Tag size={16} />
+                </button>
+                <button className="btn btn-primary" onClick={handleAddLane} title="Novo Objetivo">
+                    <Plus size={16} /> Lane
+                </button>
+                <button className="btn btn-glass" onClick={handleShare} title="Compartilhar">
+                    <Share2 size={16} />
+                </button>
+            </BoardHeader>
 
             {/* Roadmap Content */}
             <div className="roadmap-container animate-fade-in">
@@ -539,102 +607,65 @@ export default function Roadmap() {
                             <tbody>
                                 {lanes.length === 0 ? (
                                     <tr>
-                                        <td colSpan={visibleMonths.length + 1} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                                            Nenhum objetivo adicionado. Clique em "+ Lane" para começar.
+                                        <td colSpan={visibleMonths.length + 1} className="py-20 text-center text-muted animate-fade-in-up relative">
+                                            <div className="flex flex-col items-center justify-center p-8 bg-black/10 rounded-lg mx-auto w-fit border border-white/5 shadow-inner mt-8 max-w-md">
+                                                <Target size={48} className="mb-4 opacity-50" />
+                                                <p className="text-lg mb-4 text-white font-medium">Nenhum objetivo definido</p>
+                                                <p className="text-sm mb-6 max-w-sm">
+                                                    Para visualizar o roadmap, crie um novo objetivo. Depois, adicione as iniciativas que serão necessárias para alcançá-lo.
+                                                </p>
+                                                <button className="btn btn-primary" onClick={handleAddLane}>
+                                                    <Plus size={16} /> Criar Primeiro Objetivo
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : (
-                                    lanes.map(lane => {
-                                        const features = getFilteredFeatures(lane.id);
-                                        return (
-                                            <tr
-                                                key={lane.id}
-                                                className={`lane-row ${dragOverLaneId === lane.id ? 'lane-drag-over' : ''} ${draggingLaneId === lane.id ? 'lane-dragging' : ''}`}
-                                                onDragOver={(e) => handleLaneDragOver(e, lane.id)}
-                                                onDragLeave={() => setDragOverLaneId(null)}
-                                                onDrop={(e) => handleLaneDrop(e, lane.id)}
-                                            >
-                                                <td className="timeline-lane-name">
-                                                    <div className="lane-name-content">
-                                                        <div className="lane-header-row">
-                                                            <span
-                                                                className="lane-drag-handle"
-                                                                draggable
-                                                                onDragStart={(e) => {
-                                                                    e.dataTransfer.setData('laneId', lane.id);
-                                                                    e.dataTransfer.effectAllowed = 'move';
-                                                                    setDraggingLaneId(lane.id);
-                                                                }}
-                                                                onDragEnd={() => setDraggingLaneId(null)}
-                                                                title="Arrastar para reordenar"
-                                                            >
-                                                                <GripVertical size={14} />
-                                                            </span>
-                                                            {editingLaneId === lane.id ? (
-                                                                <input
-                                                                    type="text"
-                                                                    className="glass-input lane-edit-input"
-                                                                    value={editingLaneTitle}
-                                                                    onChange={(e) => setEditingLaneTitle(e.target.value)}
-                                                                    onBlur={() => handleLaneTitleSave(lane.id)}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter') handleLaneTitleSave(lane.id);
-                                                                        if (e.key === 'Escape') setEditingLaneId(null);
-                                                                    }}
-                                                                    autoFocus
-                                                                />
-                                                            ) : (
-                                                                <span
-                                                                    className="lane-title"
-                                                                    onDoubleClick={() => handleLaneDoubleClick(lane)}
-                                                                    title="Duplo clique para editar"
-                                                                >
-                                                                    <HealthIndicator features={getFeatures(lane.id)} />
-                                                                    {lane.title}
+                                    <>
+                                        {/* Render Grouped by Choice */}
+                                        {choices.map(choice => {
+                                            const choiceLanes = lanes.filter(l => l.strategicChoiceId === choice.id);
+                                            if (choiceLanes.length === 0) return null;
+
+                                            return (
+                                                <React.Fragment key={`choice-${choice.id}`}>
+                                                    <tr className="choice-separator-row border-y border-[var(--border-color)] bg-black/20">
+                                                        <td colSpan={visibleMonths.length + 1} className="py-2 px-4 shadow-sm relative overflow-hidden">
+                                                            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: choice.color }}></div>
+                                                            <div className="flex items-center gap-2 pl-2">
+                                                                <span className="w-2 h-2 rounded-full" style={{ background: choice.color }} />
+                                                                <strong className="text-[var(--accent)] tracking-wide">{choice.title}</strong>
+                                                                <span className="text-xs text-secondary ml-4 bg-white/5 px-2 py-0.5 rounded-full border border-white/10 hidden md:inline-block">
+                                                                    {choiceLanes.length} Objetivo{choiceLanes.length !== 1 ? 's' : ''}
                                                                 </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="lane-actions">
-                                                            <button
-                                                                className="lane-action-btn lane-action-add"
-                                                                onClick={() => openCreateFeature(lane.id)}
-                                                                title="Adicionar iniciativa"
-                                                            >
-                                                                <Plus size={13} /> Iniciativa
-                                                            </button>
-                                                            <button
-                                                                className="lane-action-btn lane-action-danger"
-                                                                onClick={() => handleDeleteLane(lane.id)}
-                                                                title="Excluir objetivo"
-                                                            >
-                                                                <Trash2 size={13} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td
-                                                    colSpan={visibleMonths.length}
-                                                    className="timeline-lane-content"
-                                                    onDragOver={handleDragOver}
-                                                    onDrop={(e) => handleDrop(e, lane.id)}
-                                                    onClick={(e) => handleTimelineClick(e, lane.id)}
-                                                    title="Clique para criar uma iniciativa"
-                                                    style={{ cursor: 'crosshair' }}
-                                                >
-                                                    {features.map(feature => (
-                                                        <FeatureBar
-                                                            key={feature.id}
-                                                            feature={feature}
-                                                            year={year}
-                                                            onClick={openEditFeature}
-                                                            onUpdateFeature={updateFeature}
-                                                            visibleMonths={visibleMonths}
-                                                        />
-                                                    ))}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    {choiceLanes.map(lane => renderLaneRow(lane))}
+                                                </React.Fragment>
+                                            );
+                                        })}
+
+                                        {/* Render Unassigned Lanes */}
+                                        {(() => {
+                                            const unassignedLanes = lanes.filter(l => !l.strategicChoiceId);
+                                            if (unassignedLanes.length === 0) return null;
+                                            return (
+                                                <React.Fragment key="unassigned">
+                                                    {choices.length > 0 && (
+                                                        <tr className="choice-separator-row border-y border-[var(--border-color)] bg-black/10">
+                                                            <td colSpan={visibleMonths.length + 1} className="py-2 px-4">
+                                                                <div className="flex items-center gap-2">
+                                                                    <strong className="text-secondary tracking-wide">Outros Objetivos</strong>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                    {unassignedLanes.map(lane => renderLaneRow(lane))}
+                                                </React.Fragment>
+                                            );
+                                        })()}
+                                    </>
                                 )}
                             </tbody>
                         </table>
@@ -660,6 +691,8 @@ export default function Roadmap() {
                     onDelete={handleDeleteFeature}
                     onClose={() => { setShowFeatureModal(false); setEditingFeature(null); }}
                     boardTags={boardTags}
+                    boardId={boardId}
+                    user={user}
                 />
             )}
 

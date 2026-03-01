@@ -101,17 +101,17 @@ export function useBoards(userId) {
             .sort((a, b) => a.sort_order - b.sort_order);
     }, [data.lanes]);
 
-    const createLane = useCallback(async (boardId, title) => {
+    const createLane = useCallback(async (boardId, title, strategicChoiceId = null) => {
         const tempId = generateId();
         const existing = data.lanes.filter(l => l.boardId === boardId);
-        const lane = { id: tempId, boardId, title, sort_order: existing.length };
+        const lane = { id: tempId, boardId, title, strategicChoiceId, sort_order: existing.length };
 
         setData(prev => ({ ...prev, lanes: [...prev.lanes, lane] }));
 
         await fetch('/api/lanes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lane)
+            body: JSON.stringify({ ...lane, strategicChoiceId })
         });
         return lane;
     }, [data.lanes]);

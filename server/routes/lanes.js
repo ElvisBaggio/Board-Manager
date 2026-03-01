@@ -18,6 +18,8 @@ router.get('/', async (req, res) => {
             ...l,
             boardId: l.board_id,
             sortOrder: l.sort_order,
+            strategicChoiceId: l.strategic_choice_id,
+            problemOpportunity: l.problem_opportunity,
         }));
         res.json(lanes);
     } catch (error) {
@@ -28,14 +30,16 @@ router.get('/', async (req, res) => {
 
 // Create a lane
 router.post('/', async (req, res) => {
-    const { id, boardId, title } = req.body;
+    const { id, boardId, title, strategicChoiceId, problemOpportunity } = req.body;
     try {
         await db('lanes').insert({
             id,
             board_id: boardId,
             title,
+            strategic_choice_id: strategicChoiceId || null,
+            problem_opportunity: problemOpportunity || '',
         });
-        res.status(201).json({ id, boardId, title });
+        res.status(201).json({ id, boardId, title, strategicChoiceId, problemOpportunity });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao criar lane' });
@@ -45,11 +49,13 @@ router.post('/', async (req, res) => {
 // Update a lane
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const { title, sort_order } = req.body;
+    const { title, sort_order, strategicChoiceId, problemOpportunity } = req.body;
     try {
         const updateData = {};
         if (title !== undefined) updateData.title = title;
         if (sort_order !== undefined) updateData.sort_order = sort_order;
+        if (strategicChoiceId !== undefined) updateData.strategic_choice_id = strategicChoiceId;
+        if (problemOpportunity !== undefined) updateData.problem_opportunity = problemOpportunity;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ error: 'Nada para atualizar' });

@@ -5,6 +5,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Roadmap from './pages/Roadmap';
+import StrategicCanvas from './pages/StrategicCanvas';
+import StrategicChoices from './pages/StrategicChoices';
+import MetricsCascade from './pages/MetricsCascade';
+import Analytics from './pages/Analytics';
 import AdminPanel from './pages/AdminPanel';
 
 export default function App() {
@@ -24,9 +28,45 @@ export default function App() {
                 />
                 <Route
                     path="/board/:id"
+                    element={<Navigate to="canvas" replace />}
+                />
+                <Route
+                    path="/board/:id/canvas"
+                    element={
+                        <ProtectedRoute>
+                            <StrategicCanvas />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/board/:id/choices"
+                    element={
+                        <ProtectedRoute>
+                            <StrategicChoices />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/board/:id/roadmap"
                     element={
                         <ProtectedRoute>
                             <Roadmap />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/board/:id/metrics"
+                    element={
+                        <ProtectedRoute>
+                            <MetricsCascade />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/board/:id/analytics"
+                    element={
+                        <ProtectedRoute>
+                            <Analytics />
                         </ProtectedRoute>
                     }
                 />

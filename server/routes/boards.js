@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
         const boards = rows.map(b => ({
             ...b,
             userId: b.user_id,
+            justCause: b.just_cause,
             createdAt: b.created_at,
         }));
         res.json(boards);
@@ -27,15 +28,18 @@ router.get('/', async (req, res) => {
 
 // Create a new board
 router.post('/', async (req, res) => {
-    const { id, userId, title, visibility } = req.body;
+    const { id, userId, title, visibility, justCause, vision, mission } = req.body;
     try {
         await db('boards').insert({
             id,
             user_id: userId,
             title,
             visibility: visibility || 'private',
+            just_cause: justCause || '',
+            vision: vision || '',
+            mission: mission || '',
         });
-        res.status(201).json({ id, userId, title, visibility });
+        res.status(201).json({ id, userId, title, visibility, justCause, vision, mission });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao criar board' });
@@ -45,11 +49,22 @@ router.post('/', async (req, res) => {
 // Update a board
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const { title, visibility } = req.body;
+    const { title, visibility, justCause, vision, mission } = req.body;
     try {
+        const updateData = {};
+        if (title !== undefined) updateData.title = title;
+        if (visibility !== undefined) updateData.visibility = visibility;
+        if (justCause !== undefined) updateData.just_cause = justCause;
+        if (vision !== undefined) updateData.vision = vision;
+        if (mission !== undefined) updateData.mission = mission;
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ error: 'Nada para atualizar' });
+        }
+
         const count = await db('boards')
             .where('id', id)
-            .update({ title, visibility });
+            .update(updateData);
 
         if (count === 0) return res.status(404).json({ error: 'Board não encontrado' });
         res.json({ success: true });

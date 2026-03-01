@@ -4,13 +4,22 @@
 //   DB_CONNECTION_STRING: (for pg/mysql) e.g. postgres://user:pass@localhost/board_manager
 //   DB_FILENAME: (for sqlite) e.g. ./board-manager.sqlite
 
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const client = process.env.DB_CLIENT || 'better-sqlite3';
 const isSQLite = client === 'better-sqlite3' || client === 'sqlite3';
+const sqliteDbPath = process.env.DB_FILENAME || '/tmp/bm-data/board-manager.sqlite';
 
 const config = {
-    client: isSQLite ? 'better-sqlite3' : client,
+    client: client,
     connection: isSQLite
-        ? { filename: process.env.DB_FILENAME || './board-manager.sqlite' }
+        ? {
+            filename: sqliteDbPath
+        }
         : process.env.DB_CONNECTION_STRING || {
             host: process.env.DB_HOST || '127.0.0.1',
             port: parseInt(process.env.DB_PORT || '5432'),

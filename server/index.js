@@ -10,6 +10,10 @@ import usersRoutes from './routes/users.js';
 import okrsRoutes from './routes/okrs.js';
 import resourcesRoutes from './routes/resources.js';
 import risksRoutes from './routes/risks.js';
+import strategicChoicesRoutes from './routes/strategic-choices.js';
+import executionItemsRoutes from './routes/execution-items.js';
+import indicatorsRoutes from './routes/indicators.js';
+import commentsRoutes from './routes/comments.js';
 
 const app = express();
 const PORT = 3001;
@@ -27,6 +31,10 @@ app.use('/api/users', usersRoutes);
 app.use('/api/okrs', okrsRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/risks', risksRoutes);
+app.use('/api/strategic-choices', strategicChoicesRoutes);
+app.use('/api/execution-items', executionItemsRoutes);
+app.use('/api/indicators', indicatorsRoutes);
+app.use('/api/comments', commentsRoutes);
 
 // Initialize database then start server
 initDatabase()

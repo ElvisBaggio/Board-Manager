@@ -1,0 +1,95 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { ArrowLeft, Compass, Target, Map, GitMerge, BarChart3, Sun, Moon, LogOut } from 'lucide-react';
+
+export default function BoardHeader({ board, boardId, currentView, children }) {
+    const navigate = useNavigate();
+    const { logout } = useAuth();
+
+    // Theme logic
+    const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
+
+    const toggleTheme = () => {
+        const next = theme === 'dark' ? 'light' : 'dark';
+        setTheme(next);
+        document.documentElement.setAttribute('data-theme', next);
+    };
+
+    useEffect(() => {
+        // Sync theme if it changes externally
+        const observer = new MutationObserver(() => {
+            const currentObjTheme = document.documentElement.getAttribute('data-theme');
+            if (currentObjTheme && currentObjTheme !== theme) {
+                setTheme(currentObjTheme);
+            }
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        return () => observer.disconnect();
+    }, [theme]);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
+    const tabs = [
+        { id: 'canvas', label: 'Estratégia', icon: Compass },
+        { id: 'choices', label: 'Escolhas', icon: Target },
+        { id: 'roadmap', label: 'Roadmap', icon: Map },
+        { id: 'metrics', label: 'Métricas', icon: GitMerge },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    ];
+
+    if (!board) return null;
+
+    return (
+        <header className="app-header" style={{ padding: '0 24px', display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="flex items-center gap-4" style={{ flexShrink: 0 }}>
+                <button
+                    className="btn-icon"
+                    onClick={() => navigate('/')}
+                    title="Voltar ao Dashboard"
+                >
+                    <ArrowLeft size={20} />
+                </button>
+                <div>
+                    <h1 style={{ fontSize: '1.2rem', color: 'var(--accent)', margin: 0, lineHeight: 1.2 }}>{board.title}</h1>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>ID: #{boardId.slice(0, 6)}</span>
+                </div>
+            </div>
+
+            <div className="flex-1 flex justify-center">
+                <div className="bg-black/20 rounded-lg p-1 flex gap-1 border border-white/5">
+                    {tabs.map(tab => {
+                        const Icon = tab.icon;
+                        const isActive = currentView === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm transition-all focus:outline-none ${isActive ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-muted hover:text-white hover:bg-white/10'}`}
+                                onClick={() => navigate(`/board/${boardId}/${tab.id}`)}
+                            >
+                                <Icon size={16} />
+                                <span className="font-medium hidden sm:inline">{tab.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
+                {children}
+
+                <div className="w-px h-6 bg-white/10 mx-2" />
+
+                <button className="theme-toggle" onClick={toggleTheme} title="Alternar tema">
+                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+                <button className="btn btn-glass" onClick={handleLogout} title="Sair">
+                    <LogOut size={16} />
+                </button>
+            </div>
+        </header>
+    );
+}
