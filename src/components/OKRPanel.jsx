@@ -143,7 +143,7 @@ function OKRLaneSection({
                 <div className="flex flex-col items-end gap-1 w-24">
                     <span className="font-mono text-sm font-bold text-white">{overallProgress}%</span>
                     <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
-                        <div className="h-full bg-[var(--accent)] transition-all" style={{ width: `${overallProgress}%` }} />
+                        <div className="h-full transition-all" style={{ width: `${overallProgress}%`, background: 'var(--accent)' }} />
                     </div>
                 </div>
             </div>
@@ -169,7 +169,7 @@ function OKRLaneSection({
                                 const goal = boardGoals.find(g => g.id === gid);
                                 if (!goal) return null;
                                 return (
-                                    <span key={gid} className="text-xs px-2 py-1 rounded bg-[var(--accent)]/20 text-[var(--accent)] border border-[var(--accent)]/40 flex items-center gap-1">
+                                    <span key={gid} className="text-xs px-2 py-1 rounded text-accent flex items-center gap-1" style={{ background: 'rgba(0,134,255,0.2)', border: '1px solid rgba(0,134,255,0.4)' }}>
                                         <Target size={12} /> {goal.title}
                                     </span>
                                 );

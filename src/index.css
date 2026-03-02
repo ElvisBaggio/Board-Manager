@@ -1233,6 +1233,52 @@ a:hover {
   accent-color: var(--accent);
 }
 
+/* ═══════════════════════════════════════════
+   SETTINGS DROPDOWN & OVERFLOW MENU
+   ═══════════════════════════════════════════ */
+.settings-dropdown,
+.overflow-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  padding: var(--space-sm) 0;
+  min-width: 190px;
+  animation: fadeIn 0.2s ease;
+  background: rgba(20, 25, 45, 0.92) !important;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+[data-theme="light"] .settings-dropdown,
+[data-theme="light"] .overflow-menu {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.settings-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  text-align: left;
+}
+
+.settings-dropdown-item:hover {
+  color: var(--text-primary);
+  background: var(--glass-bg-hover);
+}
+
 /* User badge */
 .user-badge {
   display: flex;

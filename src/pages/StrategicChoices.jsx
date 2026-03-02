@@ -151,7 +151,12 @@ export default function StrategicChoices() {
                         {choices.map(choice => (
                             <button
                                 key={choice.id}
-                                className={`w-full text-left px-3 py-3 rounded mb-1 transition-colors flex items-center gap-2 ${selectedChoiceId === choice.id ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-medium' : 'hover:bg-white/5'}`}
+                                className={`w-full text-left px-3 py-3 rounded mb-1 transition-colors flex items-center gap-2 cursor-pointer ${selectedChoiceId === choice.id ? 'text-accent font-medium' : 'hover:bg-white/5'}`}
+                                style={{
+                                    background: selectedChoiceId === choice.id ? 'rgba(0,134,255,0.1)' : 'transparent',
+                                    border: 'none',
+                                    outline: 'none',
+                                }}
                                 onClick={() => setSelectedChoiceId(choice.id)}
                             >
                                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: choice.color }} />

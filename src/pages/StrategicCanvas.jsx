@@ -139,7 +139,7 @@ export default function StrategicCanvas() {
                             choices.map((choice, idx) => {
                                 const goals = getGoalsForChoice(choice.id);
                                 return (
-                                    <div key={choice.id} className="glass-surface rounded-lg overflow-hidden flex flex-col-md border-l-4 animate-fade-in-up" style={{ borderColor: choice.color, animationDelay: `${idx * 0.05}s` }}>
+                                    <div key={choice.id} className="glass-surface rounded-lg overflow-hidden flex flex-col-md border-l-4 animate-fade-in-up cursor-pointer hover:border-opacity-100 transition-all" style={{ borderColor: choice.color, animationDelay: `${idx * 0.05}s` }} onClick={() => navigate(`/board/${boardId}/choices`)}>
                                         {/* Left Side: The Choice */}
                                         <div className="w-1/2 w-full-md p-6 border-r border-r-0-md border-b-md border-[var(--border-color)]">
                                             <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
@@ -155,7 +155,7 @@ export default function StrategicCanvas() {
                                                 </div>
                                                 <button
                                                     className="glass-badge px-3 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
-                                                    onClick={() => navigate(`/board/${boardId}/roadmap`)}
+                                                    onClick={(e) => { e.stopPropagation(); navigate(`/board/${boardId}/roadmap`); }}
                                                 >
                                                     Ver no Roadmap →
                                                 </button>

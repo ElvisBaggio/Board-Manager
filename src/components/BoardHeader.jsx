@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Compass, Target, Map, GitMerge, BarChart3, Sun, Moon, LogOut } from 'lucide-react';
+import { ArrowLeft, Compass, Target, Map, GitMerge, BarChart3, Sun, Moon, LogOut, Settings, Users, Tag, Share2 } from 'lucide-react';
+import TeamManager from './TeamManager';
+import TagManager from './TagManager';
 
 export default function BoardHeader({ board, boardId, currentView, children }) {
     const navigate = useNavigate();
@@ -17,7 +19,6 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
     };
 
     useEffect(() => {
-        // Sync theme if it changes externally
         const observer = new MutationObserver(() => {
             const currentObjTheme = document.documentElement.getAttribute('data-theme');
             if (currentObjTheme && currentObjTheme !== theme) {
@@ -28,9 +29,41 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
         return () => observer.disconnect();
     }, [theme]);
 
+    // Settings dropdown
+    const [showSettings, setShowSettings] = useState(false);
+    const [showTeamManager, setShowTeamManager] = useState(false);
+    const [showTagManager, setShowTagManager] = useState(false);
+    const settingsRef = useRef(null);
+
+    useEffect(() => {
+        if (!showSettings) return;
+        const handleClickOutside = (e) => {
+            if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+                setShowSettings(false);
+            }
+        };
+        const timer = setTimeout(() => {
+            document.addEventListener('mousedown', handleClickOutside);
+        }, 0);
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showSettings]);
+
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    const handleShare = () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Link copiado para a área de transferência!');
+        }).catch(() => {
+            prompt('Copie o link:', url);
+        });
+        setShowSettings(false);
     };
 
     const tabs = [
@@ -44,52 +77,108 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
     if (!board) return null;
 
     return (
-        <header className="app-header" style={{ padding: '0 24px', display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="flex items-center gap-4" style={{ flexShrink: 0 }}>
-                <button
-                    className="btn-icon"
-                    onClick={() => navigate('/')}
-                    title="Voltar ao Dashboard"
-                >
-                    <ArrowLeft size={20} />
-                </button>
-                <div>
-                    <h1 style={{ fontSize: '1.2rem', color: 'var(--accent)', margin: 0, lineHeight: 1.2 }}>{board.title}</h1>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>ID: #{boardId.slice(0, 6)}</span>
+        <>
+            <header className="app-header" style={{ padding: '0 24px', display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="flex items-center gap-4" style={{ flexShrink: 0 }}>
+                    <button
+                        className="btn-icon"
+                        onClick={() => navigate('/')}
+                        title="Voltar ao Dashboard"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div>
+                        <h1 style={{ fontSize: '1.2rem', color: 'var(--accent)', margin: 0, lineHeight: 1.2 }}>{board.title}</h1>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>ID: #{boardId.slice(0, 6)}</span>
+                    </div>
                 </div>
-            </div>
 
-            <div className="flex-1 flex justify-center">
-                <div className="bg-black/20 rounded-lg p-1 flex gap-1 border border-white/5">
-                    {tabs.map(tab => {
-                        const Icon = tab.icon;
-                        const isActive = currentView === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm transition-all focus:outline-none ${isActive ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-muted hover:text-white hover:bg-white/10'}`}
-                                onClick={() => navigate(`/board/${boardId}/${tab.id}`)}
-                            >
-                                <Icon size={16} />
-                                <span className="font-medium hidden sm:inline">{tab.label}</span>
-                            </button>
-                        );
-                    })}
+                <div className="flex-1 flex justify-center">
+                    <div className="bg-black/20 rounded-lg p-1 flex gap-1 border border-white/5">
+                        {tabs.map(tab => {
+                            const Icon = tab.icon;
+                            const isActive = currentView === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm transition-all cursor-pointer ${isActive ? 'text-white' : 'text-muted hover:text-white hover:bg-white/10'}`}
+                                    style={{
+                                        background: isActive ? 'var(--accent)' : 'transparent',
+                                        border: 'none',
+                                        outline: 'none',
+                                        ...(isActive ? { boxShadow: '0 4px 16px rgba(0,134,255,0.3)' } : {}),
+                                    }}
+                                    onClick={() => navigate(`/board/${boardId}/${tab.id}`)}
+                                >
+                                    <Icon size={16} />
+                                    <span className="font-medium hidden sm:inline">{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
 
-            <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
-                {children}
+                <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
+                    {children}
 
-                <div className="w-px h-6 bg-white/10 mx-2" />
+                    {/* Settings Dropdown */}
+                    <div style={{ position: 'relative' }} ref={settingsRef}>
+                        <button
+                            className="btn-icon"
+                            onClick={() => setShowSettings(!showSettings)}
+                            title="Configurações"
+                            style={{ background: 'transparent', border: 'none', outline: 'none' }}
+                        >
+                            <Settings size={18} />
+                        </button>
+                        {showSettings && (
+                            <div className="settings-dropdown">
+                                <button
+                                    className="settings-dropdown-item"
+                                    onClick={() => { setShowTeamManager(true); setShowSettings(false); }}
+                                >
+                                    <Users size={16} /> Time
+                                </button>
+                                <button
+                                    className="settings-dropdown-item"
+                                    onClick={() => { setShowTagManager(true); setShowSettings(false); }}
+                                >
+                                    <Tag size={16} /> Tags
+                                </button>
+                                <button
+                                    className="settings-dropdown-item"
+                                    onClick={handleShare}
+                                >
+                                    <Share2 size={16} /> Compartilhar
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
-                <button className="theme-toggle" onClick={toggleTheme} title="Alternar tema">
-                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
-                <button className="btn btn-glass" onClick={handleLogout} title="Sair">
-                    <LogOut size={16} />
-                </button>
-            </div>
-        </header>
+                    <div className="w-px h-6 bg-white/10 mx-2" />
+
+                    <button className="theme-toggle" onClick={toggleTheme} title="Alternar tema">
+                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
+                    <button className="btn btn-glass" onClick={handleLogout} title="Sair">
+                        <LogOut size={16} />
+                    </button>
+                </div>
+            </header>
+
+            {showTeamManager && (
+                <TeamManager
+                    boardId={boardId}
+                    onClose={() => setShowTeamManager(false)}
+                />
+            )}
+
+            {showTagManager && (
+                <TagManager
+                    boardId={boardId}
+                    onClose={() => setShowTagManager(false)}
+                />
+            )}
+        </>
     );
 }

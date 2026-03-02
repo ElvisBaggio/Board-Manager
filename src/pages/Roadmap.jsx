@@ -7,14 +7,9 @@ import { MONTHS } from '../utils/data';
 import FeatureBar, { STATUS_COLORS } from '../components/FeatureBar';
 import FeatureModal from '../components/FeatureModal';
 import ImportModal from '../components/ImportModal';
-import TagManager from '../components/TagManager';
 import HealthIndicator from '../components/HealthIndicator';
-import OKRPanel from '../components/OKRPanel';
-import CapacityDashboard from '../components/CapacityDashboard';
-import RiskMatrix from '../components/RiskMatrix';
-import TeamManager from '../components/TeamManager';
 import BoardHeader from '../components/BoardHeader';
-import { Filter, Plus, Share2, ChevronLeft, ChevronRight, GripVertical, Upload, Tag, Trash2, X, Target, Users, Shield, BarChart3 } from 'lucide-react';
+import { Filter, Plus, ChevronLeft, ChevronRight, GripVertical, Upload, Trash2, X, Target, MoreHorizontal } from 'lucide-react';
 
 const QUARTERS = [
     { label: 'Q1', months: [0, 1, 2] },
@@ -39,7 +34,7 @@ const STATUS_LABELS = {
 export default function Roadmap() {
     const { id: boardId } = useParams();
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const {
         getBoard, getLanes, getFeatures, createLane, updateLane, deleteLane,
         createFeature, updateFeature, deleteFeature, loadBoardData
@@ -60,11 +55,7 @@ export default function Roadmap() {
     const [year, setYear] = useState(new Date().getFullYear());
     const [showFeatureModal, setShowFeatureModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
-    const [showTagManager, setShowTagManager] = useState(false);
-    const [showOKRPanel, setShowOKRPanel] = useState(false);
-    const [showCapacity, setShowCapacity] = useState(false);
-    const [showRiskMatrix, setShowRiskMatrix] = useState(false);
-    const [showTeamManager, setShowTeamManager] = useState(false);
+    const [showOverflow, setShowOverflow] = useState(false);
     const [editingFeature, setEditingFeature] = useState(null);
     const [activeLaneId, setActiveLaneId] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
@@ -76,6 +67,7 @@ export default function Roadmap() {
     const [draggingLaneId, setDraggingLaneId] = useState(null);
     const [dragOverLaneId, setDragOverLaneId] = useState(null);
     const filterRef = useRef(null);
+    const overflowRef = useRef(null);
 
     // Load board tags
     const fetchBoardTags = useCallback(async () => {
@@ -110,6 +102,23 @@ export default function Roadmap() {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showFilters]);
+
+    // Close overflow menu when clicking outside
+    useEffect(() => {
+        if (!showOverflow) return;
+        const handleClickOutside = (e) => {
+            if (overflowRef.current && !overflowRef.current.contains(e.target)) {
+                setShowOverflow(false);
+            }
+        };
+        const timer = setTimeout(() => {
+            document.addEventListener('mousedown', handleClickOutside);
+        }, 0);
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showOverflow]);
 
     // Calculate visible months and quarters based on zoom
     const { visibleQuarters, visibleMonths } = useMemo(() => {
@@ -303,20 +312,6 @@ export default function Roadmap() {
         return features;
     };
 
-    const handleShare = () => {
-        const url = window.location.href;
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Link copiado para a área de transferência!');
-        }).catch(() => {
-            prompt('Copie o link:', url);
-        });
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
     // Import handler - creates lanes and features from CSV data
     const handleImport = async (rows) => {
         const laneMap = {};
@@ -505,30 +500,29 @@ export default function Roadmap() {
                         </div>
                     )}
                 </div>
-                <button className="btn btn-glass" onClick={() => setShowOKRPanel(true)} title="OKRs">
-                    <Target size={16} />
-                </button>
-                <button className="btn btn-glass" onClick={() => setShowTeamManager(true)} title="Time">
-                    <Users size={16} />
-                </button>
-                <button className="btn btn-glass" onClick={() => setShowCapacity(true)} title="Capacidade">
-                    <BarChart3 size={16} />
-                </button>
-                <button className="btn btn-glass" onClick={() => setShowRiskMatrix(true)} title="Riscos">
-                    <Shield size={16} />
-                </button>
-                <button className="btn btn-glass" onClick={() => setShowImportModal(true)} title="Importar">
-                    <Upload size={16} />
-                </button>
-                <button className="btn btn-glass" onClick={() => setShowTagManager(true)} title="Tags">
-                    <Tag size={16} />
-                </button>
                 <button className="btn btn-primary" onClick={handleAddLane} title="Novo Objetivo">
-                    <Plus size={16} /> Lane
+                    <Plus size={16} /> Objetivo
                 </button>
-                <button className="btn btn-glass" onClick={handleShare} title="Compartilhar">
-                    <Share2 size={16} />
-                </button>
+                <div style={{ position: 'relative' }} ref={overflowRef}>
+                    <button
+                        className="btn btn-glass"
+                        onClick={() => setShowOverflow(!showOverflow)}
+                        title="Mais opções"
+                        style={{ padding: '6px 8px' }}
+                    >
+                        <MoreHorizontal size={16} />
+                    </button>
+                    {showOverflow && (
+                        <div className="overflow-menu">
+                            <button
+                                className="settings-dropdown-item"
+                                onClick={() => { setShowImportModal(true); setShowOverflow(false); }}
+                            >
+                                <Upload size={16} /> Importar CSV
+                            </button>
+                        </div>
+                    )}
+                </div>
             </BoardHeader>
 
             {/* Roadmap Content */}
@@ -702,48 +696,6 @@ export default function Roadmap() {
                     onImport={handleImport}
                     onClose={() => setShowImportModal(false)}
                     existingLanes={lanes}
-                />
-            )}
-
-            {/* Tag Manager Modal */}
-            {showTagManager && (
-                <TagManager
-                    boardId={boardId}
-                    onClose={() => { setShowTagManager(false); fetchBoardTags(); }}
-                />
-            )}
-
-            {/* OKR Panel */}
-            {showOKRPanel && (
-                <OKRPanel
-                    boardId={boardId}
-                    lanes={lanes}
-                    onClose={() => setShowOKRPanel(false)}
-                />
-            )}
-
-            {/* Team Manager */}
-            {showTeamManager && (
-                <TeamManager
-                    boardId={boardId}
-                    onClose={() => setShowTeamManager(false)}
-                />
-            )}
-
-            {/* Capacity Dashboard */}
-            {showCapacity && (
-                <CapacityDashboard
-                    boardId={boardId}
-                    year={year}
-                    onClose={() => setShowCapacity(false)}
-                />
-            )}
-
-            {/* Risk Matrix */}
-            {showRiskMatrix && (
-                <RiskMatrix
-                    boardId={boardId}
-                    onClose={() => setShowRiskMatrix(false)}
                 />
             )}
 

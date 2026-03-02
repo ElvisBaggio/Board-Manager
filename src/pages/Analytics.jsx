@@ -5,7 +5,11 @@ import { useBoards } from '../hooks/useBoards';
 import { useGoals } from '../hooks/useGoals';
 import { useExecutionItems } from '../hooks/useExecutionItems';
 import BoardHeader from '../components/BoardHeader';
-import { BarChart3, Target, CheckCircle, AlertCircle, TrendingUp, Clock } from 'lucide-react';
+import CapacityDashboard from '../components/CapacityDashboard';
+import RiskMatrix from '../components/RiskMatrix';
+import { useTeamMembers } from '../hooks/useResources';
+import { useRisks } from '../hooks/useRisks';
+import { BarChart3, Target, CheckCircle, AlertCircle, TrendingUp, Clock, Users, Shield } from 'lucide-react';
 
 // Consistent with StrategicCanvas / StrategicChoices thresholds
 function healthColor(pct) {
@@ -51,6 +55,11 @@ export default function Analytics() {
     const { boardGoals, fetchBoardGoals } = useGoals(boardId);
     const { featureCounts, fetchBoardCounts } = useExecutionItems(boardId);
     const [keyResults, setKeyResults] = useState([]);
+    const [showCapacity, setShowCapacity] = useState(false);
+    const [showRiskMatrix, setShowRiskMatrix] = useState(false);
+    const [capacityYear] = useState(new Date().getFullYear());
+    const { members } = useTeamMembers(boardId);
+    const { risks } = useRisks(boardId);
 
     useEffect(() => {
         if (!boardId) return;
@@ -251,10 +260,76 @@ export default function Analytics() {
                                     </div>
                                 </section>
                             )}
+                            {/* Section 5: Capacidade do Time */}
+                            <section className="mb-12 animate-fade-in-up">
+                                <h3 className="font-bold text-sm uppercase tracking-wider text-secondary m-0 mb-4">
+                                    Capacidade do Time
+                                </h3>
+                                <div className="glass-surface rounded-lg p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Users size={24} style={{ color: 'var(--accent)' }} />
+                                            <div>
+                                                <span className="text-2xl font-bold">{members.length}</span>
+                                                <span className="text-sm text-muted ml-2">
+                                                    {members.length === 1 ? 'membro' : 'membros'} no time
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="btn btn-glass"
+                                            onClick={() => setShowCapacity(true)}
+                                        >
+                                            Ver Detalhes
+                                        </button>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Section 6: Matriz de Riscos */}
+                            <section className="mb-12 animate-fade-in-up">
+                                <h3 className="font-bold text-sm uppercase tracking-wider text-secondary m-0 mb-4">
+                                    Matriz de Riscos
+                                </h3>
+                                <div className="glass-surface rounded-lg p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Shield size={24} style={{ color: risks.length > 0 ? 'var(--danger)' : 'var(--success)' }} />
+                                            <div>
+                                                <span className="text-2xl font-bold">{risks.length}</span>
+                                                <span className="text-sm text-muted ml-2">
+                                                    {risks.length === 1 ? 'risco mapeado' : 'riscos mapeados'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="btn btn-glass"
+                                            onClick={() => setShowRiskMatrix(true)}
+                                        >
+                                            Ver Detalhes
+                                        </button>
+                                    </div>
+                                </div>
+                            </section>
                         </>
                     )}
                 </div>
             </main>
+
+            {showCapacity && (
+                <CapacityDashboard
+                    boardId={boardId}
+                    year={capacityYear}
+                    onClose={() => setShowCapacity(false)}
+                />
+            )}
+
+            {showRiskMatrix && (
+                <RiskMatrix
+                    boardId={boardId}
+                    onClose={() => setShowRiskMatrix(false)}
+                />
+            )}
         </div>
     );
 }

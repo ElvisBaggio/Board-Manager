@@ -88,24 +88,24 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose, board
                         <h2 className="m-0">{isEdit ? 'Iniciativa: ' + (feature.title || 'Editar') : 'Nova Iniciativa'}</h2>
                         {isEdit && (
                             <div className="flex bg-black/20 rounded-lg p-1">
-                                <button
-                                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'details' ? 'bg-[var(--accent)] text-white shadow-sm' : 'text-muted hover:text-white'}`}
-                                    onClick={() => setActiveTab('details')}
-                                >
-                                    <LayoutList size={14} /> Detalhes
-                                </button>
-                                <button
-                                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'execution' ? 'bg-[var(--accent)] text-white shadow-sm' : 'text-muted hover:text-white'}`}
-                                    onClick={() => setActiveTab('execution')}
-                                >
-                                    <Layers size={14} /> Execução & Métricas
-                                </button>
-                                <button
-                                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'comments' ? 'bg-[var(--accent)] text-white shadow-sm' : 'text-muted hover:text-white'}`}
-                                    onClick={() => setActiveTab('comments')}
-                                >
-                                    <MessageSquare size={14} /> Comentários
-                                </button>
+                                {[
+                                    { id: 'details', label: 'Detalhes', Icon: LayoutList },
+                                    { id: 'execution', label: 'Execução & Métricas', Icon: Layers },
+                                    { id: 'comments', label: 'Comentários', Icon: MessageSquare },
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer ${activeTab === tab.id ? 'text-white shadow-sm' : 'text-muted hover:text-white'}`}
+                                        style={{
+                                            background: activeTab === tab.id ? 'var(--accent)' : 'transparent',
+                                            border: 'none',
+                                            outline: 'none',
+                                        }}
+                                        onClick={() => setActiveTab(tab.id)}
+                                    >
+                                        <tab.Icon size={14} /> {tab.label}
+                                    </button>
+                                ))}
                             </div>
                         )}
                     </div>

@@ -115,7 +115,7 @@ export default function ExecutionPanel({ featureId, boardId }) {
                                         <span className="font-mono text-xs text-secondary">{ind.current_value}/{ind.target_value}{ind.unit}</span>
                                     </div>
                                     <div className="h-1 w-full bg-black/40 rounded-full overflow-hidden">
-                                        <div className="h-full bg-[var(--accent)] transition-all" style={{ width: `${prog}%` }} />
+                                        <div className="h-full transition-all" style={{ width: `${prog}%`, background: 'var(--accent)' }} />
                                     </div>
                                     <div className="absolute right-1 top-1 flex gap-1 opacity-0 group-hover:opacity-100">
                                         <button
@@ -232,8 +232,8 @@ export default function ExecutionPanel({ featureId, boardId }) {
                 {items.length > 0 && (
                     <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden mb-3">
                         <div
-                            className="h-full rounded-full transition-all duration-500 bg-[var(--success)]"
-                            style={{ width: `${progress}%` }}
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${progress}%`, background: 'var(--success)' }}
                         />
                     </div>
                 )}
