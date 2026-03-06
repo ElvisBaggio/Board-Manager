@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { X, Plus, Trash2, Edit3, Users } from 'lucide-react';
 import { useTeamMembers } from '../hooks/useResources';
+import { useToast } from '../context/ToastContext';
+import ConfirmDialog from './ConfirmDialog';
 
 const AVATAR_COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
 
@@ -9,20 +11,35 @@ const AVATAR_COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#
  */
 export default function TeamManager({ boardId, onClose }) {
     const { members, createMember, updateMember, deleteMember } = useTeamMembers(boardId);
+    const { addToast } = useToast();
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState(null);
     const [form, setForm] = useState({ name: '', roleTitle: '', avatarColor: AVATAR_COLORS[0], capacityHoursPerQuarter: 480 });
+    const [confirmState, setConfirmState] = useState(null);
 
     const handleSubmit = () => {
         if (!form.name.trim()) return;
         if (editing) {
             updateMember(editing.id, form);
+            addToast(`Membro "${form.name.trim()}" atualizado.`, 'success');
         } else {
             createMember(form);
+            addToast(`Membro "${form.name.trim()}" adicionado ao time.`, 'success');
         }
         setForm({ name: '', roleTitle: '', avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)], capacityHoursPerQuarter: 480 });
         setShowForm(false);
         setEditing(null);
+    };
+
+    const handleDelete = (member) => {
+        setConfirmState({
+            message: `Remover "${member.name}" do time? Esta ação não pode ser desfeita.`,
+            onConfirm: () => {
+                deleteMember(member.id);
+                addToast(`Membro "${member.name}" removido.`, 'success');
+                setConfirmState(null);
+            }
+        });
     };
 
     const handleEdit = (member) => {
@@ -37,6 +54,7 @@ export default function TeamManager({ boardId, onClose }) {
     };
 
     return (
+        <>
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content glass-surface" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '560px' }}>
                 <div className="modal-header">
@@ -70,7 +88,7 @@ export default function TeamManager({ boardId, onClose }) {
                             </div>
                             <div className="team-member-actions">
                                 <button className="btn-icon" onClick={() => handleEdit(m)} title="Editar"><Edit3 size={14} /></button>
-                                <button className="btn-icon" onClick={() => deleteMember(m.id)} title="Excluir" style={{ color: 'var(--danger)' }}><Trash2 size={14} /></button>
+                                <button className="btn-icon" onClick={() => handleDelete(m)} title="Excluir" style={{ color: 'var(--danger)' }}><Trash2 size={14} /></button>
                             </div>
                         </div>
                     ))}
@@ -132,5 +150,16 @@ export default function TeamManager({ boardId, onClose }) {
                 )}
             </div>
         </div>
+
+        {confirmState && (
+            <ConfirmDialog
+                title="Remover membro"
+                message={confirmState.message}
+                confirmLabel="Remover"
+                onConfirm={confirmState.onConfirm}
+                onCancel={() => setConfirmState(null)}
+            />
+        )}
+        </>
     );
 }

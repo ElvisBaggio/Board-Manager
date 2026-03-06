@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { GripVertical } from 'lucide-react';
 import { calculateBarPosition, formatDate } from '../utils/data';
 
 const STATUS_COLORS = {
@@ -240,6 +241,7 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
             <div
                 className="resize-handle left"
                 onMouseDown={(e) => startDrag(e, 'resize-left')}
+                title="Arraste para ajustar data de início"
             />
 
             <div className="feature-bar-content">
@@ -250,15 +252,23 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
                         e.dataTransfer.setData('featureId', feature.id);
                         e.dataTransfer.setData('sourceLaneId', feature.laneId);
                     }}
-                    title="Mover para outro objetivo"
-                    style={{ cursor: 'grab', marginRight: '4px', opacity: 0.7 }}
-                >⠿</span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{feature.title}</span>
+                    title="Arraste para mover entre objetivos"
+                    style={{ cursor: 'grab', marginRight: '2px', opacity: 0.45, flexShrink: 0, display: 'flex', alignItems: 'center' }}
+                >
+                    <GripVertical size={12} />
+                </span>
+                <span
+                    style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}
+                    title={feature.title}
+                >
+                    {feature.title}
+                </span>
             </div>
 
             <div
                 className="resize-handle right"
                 onMouseDown={(e) => startDrag(e, 'resize-right')}
+                title="Arraste para ajustar data de fim"
             />
 
             {/* Tooltip rendered via portal to avoid overflow clipping */}

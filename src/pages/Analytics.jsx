@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBoards } from '../hooks/useBoards';
 import { useGoals } from '../hooks/useGoals';
@@ -9,7 +9,7 @@ import CapacityDashboard from '../components/CapacityDashboard';
 import RiskMatrix from '../components/RiskMatrix';
 import { useTeamMembers } from '../hooks/useResources';
 import { useRisks } from '../hooks/useRisks';
-import { BarChart3, Target, CheckCircle, AlertCircle, TrendingUp, Clock, Users, Shield } from 'lucide-react';
+import { BarChart3, Target, CheckCircle, AlertCircle, TrendingUp, Clock, Users, Shield, ArrowRight, Map, GitMerge } from 'lucide-react';
 
 // Consistent with StrategicCanvas / StrategicChoices thresholds
 function healthColor(pct) {
@@ -50,6 +50,7 @@ function ProgressBar({ pct, color }) {
 
 export default function Analytics() {
     const { id: boardId } = useParams();
+    const navigate = useNavigate();
     const { user } = useAuth();
     const { boards, loadBoardData, getLanes, getFeaturesForBoard } = useBoards(user?.id);
     const { boardGoals, fetchBoardGoals } = useGoals(boardId);
@@ -120,6 +121,9 @@ export default function Analytics() {
                             <div className="empty-state-icon"><BarChart3 size={48} /></div>
                             <p>Nenhum dado disponível ainda.</p>
                             <p className="text-sm text-muted mt-2">Adicione iniciativas no Roadmap para ver o Analytics.</p>
+                            <button className="btn btn-primary mt-4" onClick={() => navigate(`/board/${boardId}/roadmap`)}>
+                                <Map size={16} /> Ir para o Roadmap
+                            </button>
                         </div>
                     ) : (
                         <>
@@ -142,14 +146,23 @@ export default function Analytics() {
                                         { label: 'Concluídas', value: byStatus.Done, color: 'var(--success)', Icon: CheckCircle },
                                         { label: 'Em Andamento', value: byStatus['On Going'], color: '#3b82f6', Icon: TrendingUp },
                                         { label: 'Não Iniciadas', value: byStatus['Not Started'], color: 'var(--text-muted)', Icon: Clock },
-                                        { label: 'Bloqueadas', value: byStatus.Blocked, color: 'var(--danger)', Icon: AlertCircle },
-                                    ].map(({ label, value, color, Icon }) => (
+                                        { label: 'Bloqueadas', value: byStatus.Blocked, color: 'var(--danger)', Icon: AlertCircle, action: byStatus.Blocked > 0 ? { label: 'Ver no Roadmap', view: 'roadmap' } : null },
+                                    ].map(({ label, value, color, Icon, action }) => (
                                         <div key={label} className="glass-surface rounded-lg p-5 flex flex-col justify-between">
                                             <div className="flex justify-between items-center mb-3">
                                                 <span className="text-xs text-muted font-bold uppercase tracking-wide">{label}</span>
                                                 <Icon size={16} style={{ color }} />
                                             </div>
                                             <span className="text-2xl font-bold" style={{ color }}>{value}</span>
+                                            {action && (
+                                                <button
+                                                    className="text-xs mt-2 flex items-center gap-1 hover:underline"
+                                                    style={{ color, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                                                    onClick={() => navigate(`/board/${boardId}/${action.view}`)}
+                                                >
+                                                    {action.label} <ArrowRight size={10} />
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -216,6 +229,15 @@ export default function Analytics() {
                                                         <span>Atual: <span className="font-mono font-bold" style={{ color }}>{curr}</span></span>
                                                         <span>Meta: <span className="font-mono">{tgt}</span>{goal.unit ? ` ${goal.unit}` : ''}</span>
                                                     </div>
+                                                    {pct < 50 && (
+                                                        <button
+                                                            className="text-xs mt-2 flex items-center gap-1 hover:underline"
+                                                            style={{ color: 'var(--danger)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                                                            onClick={() => navigate(`/board/${boardId}/metrics`)}
+                                                        >
+                                                            Atualizar em Métricas <ArrowRight size={10} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             );
                                         })}

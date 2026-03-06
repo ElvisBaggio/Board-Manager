@@ -9,6 +9,7 @@ import FeatureModal from '../components/FeatureModal';
 import ImportModal from '../components/ImportModal';
 import HealthIndicator from '../components/HealthIndicator';
 import BoardHeader from '../components/BoardHeader';
+import { useToast } from '../context/ToastContext';
 import { Filter, Plus, ChevronLeft, ChevronRight, GripVertical, Upload, Trash2, X, Target, MoreHorizontal } from 'lucide-react';
 
 const QUARTERS = [
@@ -41,6 +42,7 @@ export default function Roadmap() {
     } = useBoards(user?.id);
     const { choices, fetchChoices } = useStrategicChoices(boardId);
 
+    const { addToast } = useToast();
     const board = getBoard(boardId);
     const lanes = getLanes(boardId);
 
@@ -357,8 +359,8 @@ export default function Roadmap() {
         }
 
         setShowImportModal(false);
-        fetchBoardTags(); // Refresh board tags
-        // Reload data from backend
+        fetchBoardTags();
+        addToast(`${rows.length} iniciativa${rows.length > 1 ? 's' : ''} importada${rows.length > 1 ? 's' : ''} com sucesso!`, 'success');
         setTimeout(() => loadBoardData(boardId), 500);
     };
 
@@ -606,11 +608,18 @@ export default function Roadmap() {
                                                 <Target size={48} className="mb-4 opacity-50" />
                                                 <p className="text-lg mb-4 text-white font-medium">Nenhum objetivo definido</p>
                                                 <p className="text-sm mb-6 max-w-sm">
-                                                    Para visualizar o roadmap, crie um novo objetivo. Depois, adicione as iniciativas que serão necessárias para alcançá-lo.
+                                                    Crie um objetivo para organizar suas iniciativas no Roadmap. Cada objetivo agrupa as iniciativas necessárias para alcançá-lo.
                                                 </p>
-                                                <button className="btn btn-primary" onClick={handleAddLane}>
-                                                    <Plus size={16} /> Criar Primeiro Objetivo
-                                                </button>
+                                                <div className="flex gap-3">
+                                                    <button className="btn btn-primary" onClick={handleAddLane}>
+                                                        <Plus size={16} /> Criar Primeiro Objetivo
+                                                    </button>
+                                                    {choices.length === 0 && (
+                                                        <button className="btn btn-glass" onClick={() => navigate(`/board/${boardId}/choices`)}>
+                                                            <Target size={16} /> Definir Escolhas Estratégicas
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -651,6 +660,7 @@ export default function Roadmap() {
                                                             <td colSpan={visibleMonths.length + 1} className="py-2 px-4">
                                                                 <div className="flex items-center gap-2">
                                                                     <strong className="text-secondary tracking-wide">Outros Objetivos</strong>
+                                                                    <span className="text-xs text-muted italic" title="Objetivos não vinculados a nenhuma Escolha Estratégica">(sem escolha estratégica)</span>
                                                                 </div>
                                                             </td>
                                                         </tr>

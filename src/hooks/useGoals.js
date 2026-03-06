@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useToast } from '../context/ToastContext';
 
 export function useGoals(boardId) {
     const [boardGoals, setBoardGoals] = useState([]);
@@ -6,6 +7,7 @@ export function useGoals(boardId) {
     const [goalObjectiveLinks, setGoalObjectiveLinks] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const { addToast } = useToast();
 
     const fetchBoardGoals = useCallback(async () => {
         if (!boardId) return;
@@ -17,6 +19,7 @@ export function useGoals(boardId) {
             setBoardGoals(data);
         } catch (err) {
             setError(err.message);
+            addToast('Falha ao carregar Goals / KPIs.', 'error');
         } finally {
             setLoading(false);
         }

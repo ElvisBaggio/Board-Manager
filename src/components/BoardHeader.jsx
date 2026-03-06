@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { ArrowLeft, Compass, Target, Map, GitMerge, BarChart3, Sun, Moon, LogOut, Settings, Users, Tag, Share2 } from 'lucide-react';
 import TeamManager from './TeamManager';
 import TagManager from './TagManager';
@@ -8,6 +9,7 @@ import TagManager from './TagManager';
 export default function BoardHeader({ board, boardId, currentView, children }) {
     const navigate = useNavigate();
     const { logout } = useAuth();
+    const { addToast } = useToast();
 
     // Theme logic
     const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
@@ -59,9 +61,9 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
     const handleShare = () => {
         const url = window.location.href;
         navigator.clipboard.writeText(url).then(() => {
-            alert('Link copiado para a área de transferência!');
+            addToast('Link copiado para a área de transferência!', 'success');
         }).catch(() => {
-            prompt('Copie o link:', url);
+            addToast('Não foi possível copiar automaticamente. URL: ' + url, 'info');
         });
         setShowSettings(false);
     };
@@ -79,17 +81,19 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
     return (
         <>
             <header className="app-header" style={{ padding: '0 24px', display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <div className="flex items-center gap-4" style={{ flexShrink: 0 }}>
+                <div className="flex items-center gap-3" style={{ flexShrink: 0 }}>
                     <button
-                        className="btn-icon"
+                        className="btn btn-glass flex items-center gap-1.5 px-3 py-1.5 text-sm"
                         onClick={() => navigate('/')}
                         title="Voltar ao Dashboard"
+                        style={{ fontSize: '0.8rem' }}
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={14} />
+                        <span className="hidden sm:inline">Dashboard</span>
                     </button>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>/</span>
                     <div>
-                        <h1 style={{ fontSize: '1.2rem', color: 'var(--accent)', margin: 0, lineHeight: 1.2 }}>{board.title}</h1>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>ID: #{boardId.slice(0, 6)}</span>
+                        <h1 style={{ fontSize: '1.1rem', color: 'var(--accent)', margin: 0, lineHeight: 1.2 }}>{board.title}</h1>
                     </div>
                 </div>
 
@@ -121,6 +125,25 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
                 <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
                     {children}
 
+                    <button
+                        className="btn btn-glass flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                        onClick={() => setShowTeamManager(true)}
+                        title="Gerenciar Time"
+                        style={{ fontSize: '0.8rem' }}
+                    >
+                        <Users size={14} />
+                        <span className="hidden md:inline">Time</span>
+                    </button>
+                    <button
+                        className="btn btn-glass flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                        onClick={() => setShowTagManager(true)}
+                        title="Gerenciar Tags"
+                        style={{ fontSize: '0.8rem' }}
+                    >
+                        <Tag size={14} />
+                        <span className="hidden md:inline">Tags</span>
+                    </button>
+
                     {/* Settings Dropdown */}
                     <div style={{ position: 'relative' }} ref={settingsRef}>
                         <button
@@ -133,18 +156,6 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
                         </button>
                         {showSettings && (
                             <div className="settings-dropdown">
-                                <button
-                                    className="settings-dropdown-item"
-                                    onClick={() => { setShowTeamManager(true); setShowSettings(false); }}
-                                >
-                                    <Users size={16} /> Time
-                                </button>
-                                <button
-                                    className="settings-dropdown-item"
-                                    onClick={() => { setShowTagManager(true); setShowSettings(false); }}
-                                >
-                                    <Tag size={16} /> Tags
-                                </button>
                                 <button
                                     className="settings-dropdown-item"
                                     onClick={handleShare}

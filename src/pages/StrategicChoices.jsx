@@ -6,6 +6,7 @@ import { useStrategicChoices } from '../hooks/useStrategicChoices';
 import { useGoals } from '../hooks/useGoals';
 import BoardHeader from '../components/BoardHeader';
 import { Target, Plus, Check, Trash2, Edit2, Link as LinkIcon, X } from 'lucide-react';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const FREQUENCY_LABELS = {
     daily: 'Diária',
@@ -46,6 +47,7 @@ export default function StrategicChoices() {
     const [linkingGoalId, setLinkingGoalId] = useState(null);
     // Modal to link an existing lane to the current choice
     const [showLinkObjModal, setShowLinkObjModal] = useState(false);
+    const [confirmState, setConfirmState] = useState(null);
 
     useEffect(() => {
         if (boardId) {
@@ -198,10 +200,14 @@ export default function StrategicChoices() {
                                             <Edit2 size={16} /> Editar Escolha
                                         </button>
                                         <button className="btn btn-danger" onClick={() => {
-                                            if (confirm('Excluir esta escolha estratégica?')) {
-                                                deleteChoice(activeChoice.id);
-                                                setSelectedChoiceId(null);
-                                            }
+                                            setConfirmState({
+                                                message: 'Excluir esta escolha estratégica? Todos os goals vinculados serão excluídos.',
+                                                onConfirm: () => {
+                                                    deleteChoice(activeChoice.id);
+                                                    setSelectedChoiceId(null);
+                                                    setConfirmState(null);
+                                                }
+                                            });
                                         }}>
                                             <Trash2 size={16} />
                                         </button>
@@ -512,7 +518,14 @@ export default function StrategicChoices() {
                             <h2>{editingGoal ? 'Editar Goal/KPI' : 'Novo Goal/KPI'}</h2>
                             {editingGoal && (
                                 <button className="btn-icon-sm ml-auto text-danger hover:bg-danger/20 p-2 rounded" onClick={() => {
-                                    if (confirm('Excluir este goal?')) deleteGoal(editingGoal.id); setShowGoalModal(false);
+                                    setConfirmState({
+                                        message: 'Excluir este Goal/KPI?',
+                                        onConfirm: () => {
+                                            deleteGoal(editingGoal.id);
+                                            setShowGoalModal(false);
+                                            setConfirmState(null);
+                                        }
+                                    });
                                 }}>
                                     <Trash2 size={16} />
                                 </button>
@@ -563,6 +576,14 @@ export default function StrategicChoices() {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {confirmState && (
+                <ConfirmDialog
+                    message={confirmState.message}
+                    onConfirm={confirmState.onConfirm}
+                    onCancel={() => setConfirmState(null)}
+                />
             )}
         </div>
     );

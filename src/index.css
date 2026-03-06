@@ -1049,14 +1049,21 @@ a:hover {
   width: 8px;
   cursor: ew-resize;
   z-index: 5;
+  transition: background 0.15s;
 }
 
 .resize-handle.left {
   left: 0;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
 
 .resize-handle.right {
   right: 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.resize-handle:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .feature-bar-content {
@@ -2407,4 +2414,86 @@ a:hover {
     flex-wrap: wrap;
     gap: var(--space-sm);
   }
+}
+
+/* ═══════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════ */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid;
+  font-size: 0.875rem;
+  font-weight: 500;
+  max-width: 380px;
+  cursor: pointer;
+  pointer-events: all;
+  animation: toast-slide-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  box-shadow: var(--shadow-md);
+  line-height: 1.4;
+}
+
+.toast-success {
+  background: rgba(46, 176, 75, 0.15);
+  border-color: rgba(46, 176, 75, 0.4);
+  color: #4ADE80;
+}
+
+.toast-error {
+  background: rgba(238, 49, 42, 0.15);
+  border-color: rgba(238, 49, 42, 0.4);
+  color: #FF6B6B;
+}
+
+.toast-info {
+  background: rgba(0, 134, 255, 0.15);
+  border-color: rgba(0, 134, 255, 0.4);
+  color: var(--accent);
+}
+
+.toast-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.toast-close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(110%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 }

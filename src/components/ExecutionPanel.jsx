@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useExecutionItems } from '../hooks/useExecutionItems';
 import { useIndicators } from '../hooks/useIndicators';
 import { Plus, Trash2, GripVertical, Activity, Zap, Circle, CheckCircle2, Clock, AlertOctagon, User } from 'lucide-react';
+import ConfirmDialog from './ConfirmDialog';
 
 const ITEM_TYPES = {
     'Epic': { label: 'Épico', color: 'var(--accent)', icon: '🟣' },
-    'Story': { label: 'Story', color: '#3498db', icon: '🔵' },
+    'Story': { label: 'História', color: '#3498db', icon: '🔵' },
     'Feature': { label: 'Feature', color: 'var(--success)', icon: '🟢' },
     'Tech Story': { label: 'Tech', color: '#e67e22', icon: '🟠' }
 };
@@ -39,6 +40,7 @@ export default function ExecutionPanel({ featureId, boardId }) {
     const [newItemAssignee, setNewItemAssignee] = useState('');
     const [newIndTitle, setNewIndTitle] = useState('');
     const [teamMembers, setTeamMembers] = useState([]);
+    const [confirmState, setConfirmState] = useState(null);
 
     useEffect(() => {
         if (featureId) {
@@ -95,6 +97,7 @@ export default function ExecutionPanel({ featureId, boardId }) {
     const assigneeMap = Object.fromEntries(teamMembers.map(m => [m.id, m]));
 
     return (
+        <>
         <div className="flex flex-col gap-6 h-full overflow-y-auto pr-2 custom-scrollbar">
 
             {/* Top Indicators Row */}
@@ -130,7 +133,11 @@ export default function ExecutionPanel({ featureId, boardId }) {
                                         >✏️</button>
                                         <button
                                             className="text-danger p-1 bg-black/40 rounded text-xs"
-                                            onClick={() => confirm('Remover indicador?') && deleteProductIndicator(ind.id)}
+                                            onClick={() => setConfirmState({
+                                                title: 'Remover indicador',
+                                                message: 'Remover este indicador de produto?',
+                                                onConfirm: () => { deleteProductIndicator(ind.id); setConfirmState(null); }
+                                            })}
                                         >
                                             <Trash2 size={11} />
                                         </button>
@@ -289,7 +296,11 @@ export default function ExecutionPanel({ featureId, boardId }) {
 
                                     <button
                                         className="text-danger opacity-0 group-hover:opacity-100 p-1 hover:bg-danger/20 rounded ml-1 flex-shrink-0"
-                                        onClick={() => confirm('Excluir item?') && deleteItem(item.id)}
+                                        onClick={() => setConfirmState({
+                                            title: 'Excluir item',
+                                            message: 'Excluir este item de execução permanentemente?',
+                                            onConfirm: () => { deleteItem(item.id); setConfirmState(null); }
+                                        })}
                                     >
                                         <Trash2 size={14} />
                                     </button>
@@ -300,5 +311,15 @@ export default function ExecutionPanel({ featureId, boardId }) {
                 </div>
             </div>
         </div>
+
+        {confirmState && (
+            <ConfirmDialog
+                title={confirmState.title}
+                message={confirmState.message}
+                onConfirm={confirmState.onConfirm}
+                onCancel={() => setConfirmState(null)}
+            />
+        )}
+        </>
     );
 }

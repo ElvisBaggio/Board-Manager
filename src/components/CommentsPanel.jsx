@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useComments } from '../hooks/useComments';
 import { Trash2, Send, MessageSquare } from 'lucide-react';
+import ConfirmDialog from './ConfirmDialog';
 
 function timeAgo(dateStr) {
     const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
@@ -14,6 +15,7 @@ export default function CommentsPanel({ featureId, user }) {
     const { comments, loading, fetchComments, addComment, deleteComment } = useComments();
     const [text, setText] = useState('');
     const bottomRef = useRef(null);
+    const [confirmState, setConfirmState] = useState(null);
 
     useEffect(() => {
         if (featureId) fetchComments(featureId);
@@ -63,7 +65,9 @@ export default function CommentsPanel({ featureId, user }) {
                                 {isOwn && (
                                     <button
                                         className="absolute top-2 right-2 text-danger opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-danger/20 transition-all"
-                                        onClick={() => confirm('Excluir comentário?') && deleteComment(c.id)}
+                                        onClick={() => setConfirmState({
+                                            onConfirm: () => { deleteComment(c.id); setConfirmState(null); }
+                                        })}
                                     >
                                         <Trash2 size={12} />
                                     </button>
@@ -92,6 +96,16 @@ export default function CommentsPanel({ featureId, user }) {
                 </button>
             </form>
             <p className="text-xs text-muted -mt-2">Enter para enviar · Shift+Enter para nova linha</p>
+
+            {confirmState && (
+                <ConfirmDialog
+                    title="Excluir comentário"
+                    message="Excluir este comentário permanentemente?"
+                    confirmLabel="Excluir"
+                    onConfirm={confirmState.onConfirm}
+                    onCancel={() => setConfirmState(null)}
+                />
+            )}
         </div>
     );
 }

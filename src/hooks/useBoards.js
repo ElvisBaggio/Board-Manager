@@ -1,17 +1,25 @@
 import { useState, useCallback, useEffect } from 'react';
 import { generateId } from '../utils/data';
+import { useToast } from '../context/ToastContext';
 
 // Custom hook to manage fetching and optimistic updates
 export function useBoards(userId) {
     const [data, setData] = useState({ boards: [], lanes: [], features: [] });
+    const { addToast } = useToast();
 
     // Load initial boards for user
     useEffect(() => {
         if (!userId) return;
         fetch(`/api/boards?userId=${userId}`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error(`Erro ao carregar boards: ${res.status}`);
+                return res.json();
+            })
             .then(boards => setData(prev => ({ ...prev, boards })))
-            .catch(console.error);
+            .catch(err => {
+                console.error(err);
+                addToast('Falha ao carregar os boards. Verifique sua conexão.', 'error');
+            });
     }, [userId]);
 
     // ── Boards ──────────────────────────────────
@@ -91,6 +99,7 @@ export function useBoards(userId) {
             });
         } catch (error) {
             console.error('Error loading board data:', error);
+            addToast('Falha ao carregar dados do board. Verifique sua conexão.', 'error');
         }
     }, []);
 

@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { ArrowLeft, Shield, ShieldCheck, Trash2, Sun, Moon, LogOut, UserPlus, X } from 'lucide-react';
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const { addToast } = useToast();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'user' });
     const [createError, setCreateError] = useState('');
+    const [confirmState, setConfirmState] = useState(null);
 
     const toggleTheme = () => {
         const next = theme === 'dark' ? 'light' : 'dark';
@@ -94,22 +98,30 @@ export default function AdminPanel() {
         }
     };
 
-    const handleDelete = async (userId, userName) => {
+    const handleDelete = (userId, userName) => {
         if (userId === user.id) return;
-        if (!confirm(`Excluir o usuário "${userName}"? Todos os dados serão removidos.`)) return;
-
-        try {
-            const res = await fetch(`/api/users/${userId}`, {
-                method: 'DELETE',
-                headers: {
-                    'x-user-role': user.role,
-                    'x-user-id': user.id,
-                },
-            });
-            if (res.ok) fetchUsers();
-        } catch (e) {
-            console.error(e);
-        }
+        setConfirmState({
+            message: `Excluir o usuário "${userName}"? Todos os dados serão removidos permanentemente.`,
+            onConfirm: async () => {
+                setConfirmState(null);
+                try {
+                    const res = await fetch(`/api/users/${userId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'x-user-role': user.role,
+                            'x-user-id': user.id,
+                        },
+                    });
+                    if (res.ok) {
+                        fetchUsers();
+                        addToast(`Usuário "${userName}" excluído.`, 'success');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    addToast('Erro ao excluir usuário.', 'error');
+                }
+            }
+        });
     };
 
     const handleLogout = () => {
@@ -304,6 +316,15 @@ export default function AdminPanel() {
                     )}
                 </div>
             </div>
+            {confirmState && (
+                <ConfirmDialog
+                    title="Excluir usuário"
+                    message={confirmState.message}
+                    confirmLabel="Excluir usuário"
+                    onConfirm={confirmState.onConfirm}
+                    onCancel={() => setConfirmState(null)}
+                />
+            )}
         </>
     );
 }

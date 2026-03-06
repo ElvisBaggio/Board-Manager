@@ -5,7 +5,9 @@ import { useBoards } from '../hooks/useBoards';
 import { useStrategicChoices } from '../hooks/useStrategicChoices';
 import { useGoals } from '../hooks/useGoals';
 import BoardHeader from '../components/BoardHeader';
+import BoardWelcome from '../components/BoardWelcome';
 import { Edit2, Check, Target, Crosshair, BarChart3, TrendingUp } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 export default function StrategicCanvas() {
     const { id: boardId } = useParams();
@@ -17,6 +19,7 @@ export default function StrategicCanvas() {
 
     const board = getBoard(boardId);
 
+    const { addToast } = useToast();
     const [editingField, setEditingField] = useState(null);
     const [fieldValues, setFieldValues] = useState({
         justCause: '',
@@ -45,6 +48,7 @@ export default function StrategicCanvas() {
     const handleSaveField = async (field) => {
         await updateBoard(boardId, { [field]: fieldValues[field] });
         setEditingField(null);
+        addToast('Salvo com sucesso.', 'success');
     };
 
     if (!board) return <div className="p-8">Carregando...</div>;
@@ -98,12 +102,16 @@ export default function StrategicCanvas() {
 
     const getGoalsForChoice = (choiceId) => boardGoals.filter(g => g.strategic_choice_id === choiceId);
 
+    const isEmptyBoard = !board.justCause && !board.vision && !board.mission && choices.length === 0;
+
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-[var(--bg-color)] text-[var(--text-color)]">
             <BoardHeader board={board} boardId={boardId} currentView="canvas" />
 
             <main className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-6xl mx-auto">
+
+                    {isEmptyBoard && <BoardWelcome boardId={boardId} />}
 
                     {/* Top Layer: Purpose & Identity */}
                     <div className="mb-12 animate-fade-in">

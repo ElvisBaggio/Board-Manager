@@ -21,6 +21,9 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose, board
     const [endDate, setEndDate] = useState('');
     const [newTagName, setNewTagName] = useState('');
     const [newTagColor, setNewTagColor] = useState('#3498db');
+    const [titleError, setTitleError] = useState('');
+    const [dateError, setDateError] = useState('');
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (feature) {
@@ -55,15 +58,23 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose, board
     };
 
     const handleSave = () => {
+        setTitleError('');
+        setDateError('');
+
         if (!title.trim()) {
-            alert('O título é obrigatório.');
+            setTitleError('O título é obrigatório.');
             return;
         }
 
-        // Validate basic date strings
         const start = startDate ? new Date(startDate).toISOString().split('T')[0] : '';
         const end = endDate ? new Date(endDate).toISOString().split('T')[0] : '';
 
+        if (start && end && start >= end) {
+            setDateError('A data de início deve ser anterior à data de término.');
+            return;
+        }
+
+        setSaving(true);
         const data = {
             title: title.trim(),
             description: description.trim(),
@@ -73,6 +84,7 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose, board
             tags: selectedTags.map(t => typeof t === 'string' ? t : t.name),
         };
         onSave(data);
+        setSaving(false);
     };
 
     const isEdit = feature && feature.id;
@@ -122,9 +134,14 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose, board
                                     className="glass-input"
                                     placeholder="Título da iniciativa"
                                     value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
+                                    onChange={(e) => { setTitle(e.target.value); if (titleError) setTitleError(''); }}
                                     autoFocus
                                 />
+                                {titleError && (
+                                    <span style={{ color: 'var(--danger)', fontSize: '0.78rem', marginTop: '4px', display: 'block' }}>
+                                        {titleError}
+                                    </span>
+                                )}
                             </div>
 
                             <div className="form-group">
@@ -158,8 +175,8 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose, board
                                             type="date"
                                             className="glass-input"
                                             value={startDate || ''}
-                                            onChange={(e) => setStartDate(e.target.value)}
-                                            onKeyDown={(e) => e.preventDefault()} // Prevent keyboard garbling
+                                            onChange={(e) => { setStartDate(e.target.value); if (dateError) setDateError(''); }}
+                                            onKeyDown={(e) => e.preventDefault()}
                                             onClick={(e) => e.target.showPicker && e.target.showPicker()}
                                         />
                                     </div>
@@ -169,12 +186,17 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose, board
                                             type="date"
                                             className="glass-input"
                                             value={endDate || ''}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                            onKeyDown={(e) => e.preventDefault()} // Prevent keyboard garbling
+                                            onChange={(e) => { setEndDate(e.target.value); if (dateError) setDateError(''); }}
+                                            onKeyDown={(e) => e.preventDefault()}
                                             onClick={(e) => e.target.showPicker && e.target.showPicker()}
                                         />
                                     </div>
                                 </div>
+                                {dateError && (
+                                    <div className="col-span-2" style={{ color: 'var(--danger)', fontSize: '0.78rem', marginTop: '4px' }}>
+                                        {dateError}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="form-group">
@@ -267,7 +289,9 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose, board
                     </div>
                     <div className="modal-footer-right">
                         <button className="btn btn-glass" onClick={onClose}>Cancelar</button>
-                        <button className="btn btn-primary" onClick={handleSave}>Salvar</button>
+                        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                            {saving ? 'Salvando...' : 'Salvar'}
+                        </button>
                     </div>
                 </div>
             </div>

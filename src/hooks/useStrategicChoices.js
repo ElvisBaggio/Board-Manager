@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
+import { useToast } from '../context/ToastContext';
 
 export function useStrategicChoices(boardId) {
     const [choices, setChoices] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const { addToast } = useToast();
 
     const fetchChoices = useCallback(async () => {
         if (!boardId) return;
@@ -15,6 +17,7 @@ export function useStrategicChoices(boardId) {
             setChoices(data);
         } catch (err) {
             setError(err.message);
+            addToast('Falha ao carregar Escolhas Estratégicas.', 'error');
         } finally {
             setLoading(false);
         }

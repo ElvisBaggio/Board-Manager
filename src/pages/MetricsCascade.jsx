@@ -7,7 +7,9 @@ import { useGoals } from '../hooks/useGoals';
 import { useBoardOKRs } from '../hooks/useOKRs';
 import { useIndicators } from '../hooks/useIndicators';
 import BoardHeader from '../components/BoardHeader';
-import { Filter, Activity, Target, Crosshair, Zap, ArrowDown, Plus, Edit2, Trash2, X } from 'lucide-react';
+import ConfirmDialog from '../components/ConfirmDialog';
+import OKRPanel from '../components/OKRPanel';
+import { Filter, Activity, Target, Crosshair, Zap, ArrowDown, Plus, Edit2, Trash2, X, GitMerge } from 'lucide-react';
 
 export default function MetricsCascade() {
     const { id: boardId } = useParams();
@@ -192,12 +194,21 @@ export default function MetricsCascade() {
         setEditingLevel(null);
     };
 
-    const handleDelete = async (item, level) => {
-        if (!confirm('Excluir este item?')) return;
-        if (level === 'goal') { await deleteGoal(item.id); fetchBoardGoals(); }
-        else if (level === 'kr') { await fetch(`/api/okrs/${item.id}`, { method: 'DELETE' }); fetchOKRs(); }
-        else if (level === 'indicator') { await deleteProductIndicator(item.id); fetchBoardProductIndicators(); }
-        else if (level === 'efficiency') { await deleteEfficiencyIndicator(item.id); fetchEfficiencyIndicators(); }
+    const [confirmState, setConfirmState] = useState(null);
+    const [showOKRPanel, setShowOKRPanel] = useState(false);
+
+    const handleDelete = (item, level) => {
+        const levelLabels = { goal: 'meta', kr: 'key result', indicator: 'indicador', efficiency: 'indicador de eficiência' };
+        setConfirmState({
+            message: `Excluir este ${levelLabels[level] || 'item'} permanentemente?`,
+            onConfirm: async () => {
+                setConfirmState(null);
+                if (level === 'goal') { await deleteGoal(item.id); fetchBoardGoals(); }
+                else if (level === 'kr') { await fetch(`/api/okrs/${item.id}`, { method: 'DELETE' }); fetchOKRs(); }
+                else if (level === 'indicator') { await deleteProductIndicator(item.id); fetchBoardProductIndicators(); }
+                else if (level === 'efficiency') { await deleteEfficiencyIndicator(item.id); fetchEfficiencyIndicators(); }
+            }
+        });
     };
 
     if (!board) return <div className="p-8">Carregando...</div>;
@@ -258,6 +269,14 @@ export default function MetricsCascade() {
                         {choices.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                     </select>
                 </div>
+                <button
+                    className="btn btn-glass flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                    onClick={() => setShowOKRPanel(true)}
+                    title="Ver OKRs por Objetivo"
+                    style={{ fontSize: '0.8rem' }}
+                >
+                    <GitMerge size={14} /> OKRs
+                </button>
             </BoardHeader>
 
             <main className="flex-1 overflow-y-auto p-8 relative">
@@ -560,6 +579,22 @@ export default function MetricsCascade() {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {confirmState && (
+                <ConfirmDialog
+                    message={confirmState.message}
+                    onConfirm={confirmState.onConfirm}
+                    onCancel={() => setConfirmState(null)}
+                />
+            )}
+
+            {showOKRPanel && (
+                <OKRPanel
+                    boardId={boardId}
+                    lanes={boardLanes}
+                    onClose={() => setShowOKRPanel(false)}
+                />
             )}
         </div>
     );
