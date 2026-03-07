@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-export function useExecutionItems(boardId) {
+export function useExecutionItems(planId) {
     const [items, setItems] = useState([]);
     const [featureCounts, setFeatureCounts] = useState({});
     const [loading, setLoading] = useState(false);
@@ -22,9 +22,9 @@ export function useExecutionItems(boardId) {
     }, []);
 
     const fetchBoardCounts = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         try {
-            const res = await fetch(`/api/execution-items/counts?boardId=${boardId}`);
+            const res = await fetch(`/api/execution-items/counts?planId=${planId}`);
             if (!res.ok) throw new Error('Falha ao buscar contagem');
             const data = await res.json();
 
@@ -36,7 +36,7 @@ export function useExecutionItems(boardId) {
         } catch (err) {
             console.error(err);
         }
-    }, [boardId]);
+    }, [planId]);
 
     const addItem = async (itemData) => {
         try {

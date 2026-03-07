@@ -22,12 +22,12 @@ router.get('/product', async (req, res) => {
 });
 
 // GET all product indicators for a board
-router.get('/product/board/:boardId', async (req, res) => {
+router.get('/product/plan/:planId', async (req, res) => {
     try {
         const indicators = await db('product_indicators')
             .join('features', 'product_indicators.feature_id', 'features.id')
             .join('lanes', 'features.lane_id', 'lanes.id')
-            .where('lanes.board_id', req.params.boardId)
+            .where('lanes.plan_id', req.params.planId)
             .select('product_indicators.*', 'features.title as feature_title', 'lanes.title as objective_title')
             .orderBy('product_indicators.created_at', 'asc');
         res.json(indicators);
@@ -102,13 +102,13 @@ router.get('/product/:indicatorId/kr-links', async (req, res) => {
 });
 
 // GET all kr links for a board
-router.get('/board-kr-links/:boardId', async (req, res) => {
+router.get('/plan-kr-links/:planId', async (req, res) => {
     try {
         const links = await db('indicator_kr_links')
             .join('product_indicators', 'indicator_kr_links.indicator_id', 'product_indicators.id')
             .join('features', 'product_indicators.feature_id', 'features.id')
             .join('lanes', 'features.lane_id', 'lanes.id')
-            .where('lanes.board_id', req.params.boardId)
+            .where('lanes.plan_id', req.params.planId)
             .select('indicator_kr_links.*');
         res.json(links);
     } catch (error) {
@@ -145,11 +145,11 @@ router.delete('/kr-links/:id', async (req, res) => {
 
 // GET efficiency indicators for a board
 router.get('/efficiency', async (req, res) => {
-    const { boardId } = req.query;
-    if (!boardId) return res.status(400).json({ error: 'boardId obrigatório' });
+    const { planId } = req.query;
+    if (!planId) return res.status(400).json({ error: 'planId obrigatório' });
     try {
         const indicators = await db('efficiency_indicators')
-            .where('board_id', boardId)
+            .where('plan_id', planId)
             .orderBy('created_at', 'asc');
         res.json(indicators);
     } catch (error) {
@@ -159,12 +159,12 @@ router.get('/efficiency', async (req, res) => {
 
 // POST create efficiency indicator
 router.post('/efficiency', async (req, res) => {
-    const { boardId, title, value, unit, period } = req.body;
-    if (!boardId || !title) return res.status(400).json({ error: 'boardId e title obrigatórios' });
+    const { planId, title, value, unit, period } = req.body;
+    if (!planId || !title) return res.status(400).json({ error: 'planId e title obrigatórios' });
     try {
         const id = crypto.randomUUID();
         await db('efficiency_indicators').insert({
-            id, board_id: boardId, title,
+            id, plan_id: planId, title,
             value: value || 0,
             unit: unit || '',
             period: period || '',

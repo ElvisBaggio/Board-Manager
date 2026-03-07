@@ -3,19 +3,19 @@ import db from '../db.js';
 
 const router = express.Router();
 
-// Get all tags for a board
+// Get all tags for a plan
 router.get('/', async (req, res) => {
-    const { boardId } = req.query;
-    if (!boardId) return res.status(400).json({ error: 'boardId obrigatório' });
+    const { planId } = req.query;
+    if (!planId) return res.status(400).json({ error: 'planId obrigatório' });
 
     try {
         const rows = await db('tags')
-            .where('board_id', boardId)
+            .where('plan_id', planId)
             .orderBy('name', 'asc');
 
         const tags = rows.map(t => ({
             ...t,
-            boardId: t.board_id,
+            planId: t.plan_id,
             createdAt: t.created_at,
         }));
         res.json(tags);
@@ -27,8 +27,8 @@ router.get('/', async (req, res) => {
 
 // Create a tag
 router.post('/', async (req, res) => {
-    let { id, boardId, name, color } = req.body;
-    if (!name || !boardId) return res.status(400).json({ error: 'name e boardId obrigatórios' });
+    let { id, planId, name, color } = req.body;
+    if (!name || !planId) return res.status(400).json({ error: 'name e planId obrigatórios' });
 
     // Auto-generate id if not provided
     if (!id) {
@@ -38,21 +38,21 @@ router.post('/', async (req, res) => {
     try {
         // Check if tag with same name already exists for this board
         const existing = await db('tags')
-            .where('board_id', boardId)
+            .where('plan_id', planId)
             .whereRaw('LOWER(name) = LOWER(?)', [name])
             .first();
 
         if (existing) {
-            return res.json({ id: existing.id, boardId, name, color: color || '#3498db', exists: true });
+            return res.json({ id: existing.id, planId, name, color: color || '#3498db', exists: true });
         }
 
         await db('tags').insert({
             id,
-            board_id: boardId,
+            plan_id: planId,
             name,
             color: color || '#3498db',
         });
-        res.status(201).json({ id, boardId, name, color: color || '#3498db' });
+        res.status(201).json({ id, planId, name, color: color || '#3498db' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao criar tag' });

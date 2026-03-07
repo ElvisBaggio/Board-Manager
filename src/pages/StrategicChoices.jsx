@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useBoards } from '../hooks/useBoards';
+import { usePlans } from '../hooks/usePlans';
 import { useStrategicChoices } from '../hooks/useStrategicChoices';
 import { useGoals } from '../hooks/useGoals';
-import BoardHeader from '../components/BoardHeader';
+import PlanHeader from '../components/PlanHeader';
 import { Target, Plus, Check, Trash2, Edit2, Link as LinkIcon, X } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -16,22 +16,22 @@ const FREQUENCY_LABELS = {
 };
 
 export default function StrategicChoices() {
-    const { id: boardId } = useParams();
+    const { id: planId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
 
-    const { getBoard, getLanes, loadBoardData, createLane, updateLane } = useBoards(user?.id);
-    const { choices, fetchChoices, addChoice, updateChoice, deleteChoice } = useStrategicChoices(boardId);
+    const { getPlan, getLanes, loadPlanData, createLane, updateLane } = usePlans(user?.id);
+    const { choices, fetchChoices, addChoice, updateChoice, deleteChoice } = useStrategicChoices(planId);
 
     const {
         choiceGoals, goalObjectiveLinks,
         fetchGoalsByChoice, fetchBoardGoalLinks,
         addGoal, updateGoal, deleteGoal,
         linkGoalToObjective, unlinkGoalFromObjective
-    } = useGoals(boardId);
+    } = useGoals(planId);
 
-    const board = getBoard(boardId);
-    const lanes = getLanes(boardId);
+    const plan = getPlan(planId);
+    const lanes = getLanes(planId);
 
     const [selectedChoiceId, setSelectedChoiceId] = useState(null);
     const [showChoiceModal, setShowChoiceModal] = useState(false);
@@ -50,12 +50,12 @@ export default function StrategicChoices() {
     const [confirmState, setConfirmState] = useState(null);
 
     useEffect(() => {
-        if (boardId) {
-            loadBoardData(boardId);
+        if (planId) {
+            loadPlanData(planId);
             fetchChoices();
             fetchBoardGoalLinks();
         }
-    }, [boardId, loadBoardData, fetchChoices, fetchBoardGoalLinks]);
+    }, [planId, loadPlanData, fetchChoices, fetchBoardGoalLinks]);
 
     useEffect(() => {
         if (choices.length > 0 && !selectedChoiceId) {
@@ -108,7 +108,7 @@ export default function StrategicChoices() {
 
     const handleAddObjective = async () => {
         if (!newObjTitle.trim()) return;
-        await createLane(boardId, newObjTitle.trim(), selectedChoiceId);
+        await createLane(planId, newObjTitle.trim(), selectedChoiceId);
         setNewObjTitle('');
         setShowObjInput(false);
     };
@@ -133,16 +133,16 @@ export default function StrategicChoices() {
         return choiceGoals.filter(g => linkedGoalIds.includes(g.id));
     };
 
-    if (!board) return <div className="p-8">Carregando...</div>;
+    if (!plan) return <div className="p-8">Carregando...</div>;
 
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-[var(--bg-color)] text-[var(--text-color)]" onClick={() => setLinkingGoalId(null)}>
-            <BoardHeader board={board} boardId={boardId} currentView="choices" />
+            <PlanHeader plan={plan} planId={planId} currentView="choices" />
 
             <main className="flex-1 overflow-hidden flex flex-col-md overflow-y-auto-md">
 
                 {/* Sidebar: List of Choices */}
-                <div className="w-64 w-full-md h-[30%] h-auto-md glass-surface flex flex-col border-r border-r-0-md border-[var(--border-color)] border-b-md">
+                <div className="choices-sidebar w-64 w-full-md h-[30%] h-auto-md glass-surface flex flex-col border-r border-r-0-md border-[var(--border-color)] border-b-md">
                     <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-black/20">
                         <h3 className="font-bold text-sm uppercase tracking-wider text-secondary m-0">Suas Escolhas</h3>
                         <button className="btn-icon-sm" onClick={() => { setEditingChoice(null); setShowChoiceModal(true); }}>
@@ -195,7 +195,7 @@ export default function StrategicChoices() {
                                         </div>
                                         <p className="text-muted m-0">{activeChoice.description || 'Sem descrição.'}</p>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="choice-header-actions flex gap-2">
                                         <button className="btn btn-glass" onClick={() => { setEditingChoice(activeChoice); setShowChoiceModal(true); }}>
                                             <Edit2 size={16} /> Editar Escolha
                                         </button>
@@ -216,10 +216,10 @@ export default function StrategicChoices() {
                             </div>
 
                             {/* Split Panels: Goals (Left) | Objectives (Right) */}
-                            <div className="flex-1 flex flex-col-md overflow-hidden overflow-y-auto-md">
+                            <div className="choices-main-split flex-1 flex flex-col-md overflow-hidden overflow-y-auto-md">
 
                                 {/* Goals Panel */}
-                                <div className="w-1/2 w-full-md h-auto-md p-6 border-r border-r-0-md border-[var(--border-color)] flex flex-col gap-4 overflow-y-auto border-b-md">
+                                <div className="choices-goals-panel w-1/2 w-full-md h-auto-md p-6 border-r border-r-0-md border-[var(--border-color)] flex flex-col gap-4 overflow-y-auto border-b-md">
                                     <div className="flex justify-between items-center">
                                         <h3 className="font-bold text-[var(--accent)] m-0 flex items-center gap-2">
                                             <Target size={18} /> Goals / KPIs (Medição)
@@ -343,7 +343,7 @@ export default function StrategicChoices() {
                                 </div>
 
                                 {/* Objectives Panel */}
-                                <div className="w-1/2 w-full-md h-auto-md p-6 flex flex-col gap-4 overflow-y-auto bg-black/10">
+                                <div className="choices-objectives-panel w-1/2 w-full-md h-auto-md p-6 flex flex-col gap-4 overflow-y-auto bg-black/10">
                                     <div className="flex justify-between items-center">
                                         <h3 className="font-bold text-[var(--success)] m-0 flex items-center gap-2">
                                             <Check size={18} /> Objetivos (Execução)
@@ -420,7 +420,7 @@ export default function StrategicChoices() {
                                                     </span>
                                                     <button
                                                         className="btn btn-glass px-2 py-1 rounded"
-                                                        onClick={() => navigate(`/board/${boardId}/roadmap`)}
+                                                        onClick={() => navigate(`/plan/${planId}/roadmap`)}
                                                     >
                                                         Abrir Roadmap →
                                                     </button>

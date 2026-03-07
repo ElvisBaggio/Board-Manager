@@ -3,34 +3,34 @@ import { generateId } from '../utils/data';
 import { useToast } from '../context/ToastContext';
 
 // Custom hook to manage fetching and optimistic updates
-export function useBoards(userId) {
-    const [data, setData] = useState({ boards: [], lanes: [], features: [] });
+export function usePlans(userId) {
+    const [data, setData] = useState({ plans: [], lanes: [], features: [] });
     const { addToast } = useToast();
 
-    // Load initial boards for user
+    // Load initial plans for user
     useEffect(() => {
         if (!userId) return;
-        fetch(`/api/boards?userId=${userId}`)
+        fetch(`/api/plans?userId=${userId}`)
             .then(res => {
-                if (!res.ok) throw new Error(`Erro ao carregar boards: ${res.status}`);
+                if (!res.ok) throw new Error(`Erro ao carregar planejamentos: ${res.status}`);
                 return res.json();
             })
-            .then(boards => setData(prev => ({ ...prev, boards })))
+            .then(plans => setData(prev => ({ ...prev, plans })))
             .catch(err => {
                 console.error(err);
-                addToast('Falha ao carregar os boards. Verifique sua conexão.', 'error');
+                addToast('Falha ao carregar os planejamentos. Verifique sua conexão.', 'error');
             });
     }, [userId]);
 
-    // ── Boards ──────────────────────────────────
-    const createBoard = useCallback(async (title, visibility = 'Privado') => {
+    // ── Plans ──────────────────────────────────
+    const createPlan = useCallback(async (title, visibility = 'Privado') => {
         const tempId = generateId();
         const payload = { id: tempId, userId, title, visibility };
 
         // Optimistic
-        setData(prev => ({ ...prev, boards: [{ ...payload, createdAt: new Date().toISOString() }, ...prev.boards] }));
+        setData(prev => ({ ...prev, plans: [{ ...payload, createdAt: new Date().toISOString() }, ...prev.plans] }));
 
-        await fetch('/api/boards', {
+        await fetch('/api/plans', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -38,57 +38,57 @@ export function useBoards(userId) {
         return payload;
     }, [userId]);
 
-    const updateBoard = useCallback(async (boardId, updates) => {
+    const updatePlan = useCallback(async (planId, updates) => {
         setData(prev => ({
             ...prev,
-            boards: prev.boards.map(b => b.id === boardId ? { ...b, ...updates } : b),
+            plans: prev.plans.map(b => b.id === planId ? { ...b, ...updates } : b),
         }));
 
-        await fetch(`/api/boards/${boardId}`, {
+        await fetch(`/api/plans/${planId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates)
         });
     }, []);
 
-    const deleteBoard = useCallback(async (boardId) => {
+    const deletePlan = useCallback(async (planId) => {
         setData(prev => ({
             ...prev,
-            boards: prev.boards.filter(b => b.id !== boardId),
+            plans: prev.plans.filter(b => b.id !== planId),
         }));
 
-        await fetch(`/api/boards/${boardId}`, {
+        await fetch(`/api/plans/${planId}`, {
             method: 'DELETE'
         });
     }, []);
 
-    const getBoard = useCallback((boardId) => {
-        return data.boards.find(b => b.id === boardId) || null;
-    }, [data.boards]);
+    const getPlan = useCallback((planId) => {
+        return data.plans.find(b => b.id === planId) || null;
+    }, [data.plans]);
 
-    const getBoardByNumericId = useCallback((numId) => {
+    const getPlanByNumericId = useCallback((numId) => {
         const idx = parseInt(numId, 10) - 1;
-        if (idx >= 0 && idx < data.boards.length) {
-            return data.boards[idx];
+        if (idx >= 0 && idx < data.plans.length) {
+            return data.plans[idx];
         }
         return null;
-    }, [data.boards]);
+    }, [data.plans]);
 
     // ── Roadmap Data Loading (Lanes & Features) ─────
     // To be called by Roadmap component to ensure we have timeline data
-    const loadBoardData = useCallback(async (boardId) => {
-        if (!boardId) return;
+    const loadPlanData = useCallback(async (planId) => {
+        if (!planId) return;
         try {
             const [lanesRes, featuresRes] = await Promise.all([
-                fetch(`/api/lanes?boardId=${boardId}`),
-                fetch(`/api/features?boardId=${boardId}`)
+                fetch(`/api/lanes?planId=${planId}`),
+                fetch(`/api/features?planId=${planId}`)
             ]);
             const lanes = await lanesRes.json();
             const features = await featuresRes.json();
 
             setData(prev => {
-                // Remove old lanes/features for this board, add new ones
-                const safePrevLanes = prev.lanes.filter(l => l.boardId !== boardId);
+                // Remove old lanes/features for this plan, add new ones
+                const safePrevLanes = prev.lanes.filter(l => l.planId !== planId);
                 const laneIds = lanes.map(l => l.id);
                 const safePrevFeatures = prev.features.filter(f => !laneIds.includes(f.laneId));
                 return {
@@ -98,22 +98,22 @@ export function useBoards(userId) {
                 };
             });
         } catch (error) {
-            console.error('Error loading board data:', error);
-            addToast('Falha ao carregar dados do board. Verifique sua conexão.', 'error');
+            console.error('Error loading plan data:', error);
+            addToast('Falha ao carregar dados do planejamento. Verifique sua conexão.', 'error');
         }
     }, []);
 
     // ── Lanes ───────────────────────────────────
-    const getLanes = useCallback((boardId) => {
+    const getLanes = useCallback((planId) => {
         return data.lanes
-            .filter(l => l.boardId === boardId)
+            .filter(l => l.planId === planId)
             .sort((a, b) => a.sort_order - b.sort_order);
     }, [data.lanes]);
 
-    const createLane = useCallback(async (boardId, title, strategicChoiceId = null) => {
+    const createLane = useCallback(async (planId, title, strategicChoiceId = null) => {
         const tempId = generateId();
-        const existing = data.lanes.filter(l => l.boardId === boardId);
-        const lane = { id: tempId, boardId, title, strategicChoiceId, sort_order: existing.length };
+        const existing = data.lanes.filter(l => l.planId === planId);
+        const lane = { id: tempId, planId, title, strategicChoiceId, sort_order: existing.length };
 
         setData(prev => ({ ...prev, lanes: [...prev.lanes, lane] }));
 
@@ -155,8 +155,8 @@ export function useBoards(userId) {
         return data.features.filter(f => f.laneId === laneId);
     }, [data.features]);
 
-    const getFeaturesForBoard = useCallback((boardId) => {
-        const laneIds = data.lanes.filter(l => l.boardId === boardId).map(l => l.id);
+    const getFeaturesForPlan = useCallback((planId) => {
+        const laneIds = data.lanes.filter(l => l.planId === planId).map(l => l.id);
         return data.features.filter(f => laneIds.includes(f.laneId));
     }, [data.lanes, data.features]);
 
@@ -207,19 +207,19 @@ export function useBoards(userId) {
     }, []);
 
     return {
-        boards: data.boards,
-        loadBoardData,
-        createBoard,
-        updateBoard,
-        deleteBoard,
-        getBoard,
-        getBoardByNumericId,
+        plans: data.plans,
+        loadPlanData,
+        createPlan,
+        updatePlan,
+        deletePlan,
+        getPlan,
+        getPlanByNumericId,
         getLanes,
         createLane,
         updateLane,
         deleteLane,
         getFeatures,
-        getFeaturesForBoard,
+        getFeaturesForPlan,
         createFeature,
         updateFeature,
         deleteFeature,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useBoards } from '../hooks/useBoards';
+import { usePlans } from '../hooks/usePlans';
 import { formatCreatedDate } from '../utils/data';
 import { Sun, Moon, LogOut, Plus, ClipboardList, Lock, Edit2, Globe, ShieldCheck, Trash2, X } from 'lucide-react';
 
@@ -9,16 +9,16 @@ export default function Dashboard() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const {
-        boards, createBoard, updateBoard, deleteBoard, getBoardByNumericId,
-    } = useBoards(user.id);
+        plans, createPlan, updatePlan, deletePlan, getPlanByNumericId,
+    } = usePlans(user.id);
 
     const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark');
     const [searchId, setSearchId] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [editingBoard, setEditingBoard] = useState(null);
+    const [editingPlan, setEditingPlan] = useState(null);
     const [modalTitle, setModalTitle] = useState('');
     const [modalVisibility, setModalVisibility] = useState('Privado');
-    const [confirmDelete, setConfirmDelete] = useState(null); // board id to confirm delete
+    const [confirmDelete, setConfirmDelete] = useState(null); // plan id to confirm delete
 
     const toggleTheme = () => {
         const next = theme === 'dark' ? 'light' : 'dark';
@@ -29,45 +29,45 @@ export default function Dashboard() {
     const handleSearch = () => {
         if (!searchId) return;
         const idx = parseInt(searchId, 10) - 1;
-        if (idx >= 0 && idx < boards.length) {
-            navigate(`/board/${boards[idx].id}`);
+        if (idx >= 0 && idx < plans.length) {
+            navigate(`/plan/${plans[idx].id}`);
         }
     };
 
     const openCreate = () => {
-        setEditingBoard(null);
+        setEditingPlan(null);
         setModalTitle('');
         setModalVisibility('Privado');
         setShowModal(true);
     };
 
-    const openEdit = (e, board) => {
+    const openEdit = (e, plan) => {
         e.stopPropagation();
-        setEditingBoard(board);
-        setModalTitle(board.title);
-        setModalVisibility(board.visibility);
+        setEditingPlan(plan);
+        setModalTitle(plan.title);
+        setModalVisibility(plan.visibility);
         setShowModal(true);
     };
 
     const handleSave = () => {
         if (!modalTitle.trim()) return;
-        if (editingBoard) {
-            updateBoard(editingBoard.id, { title: modalTitle.trim(), visibility: modalVisibility });
+        if (editingPlan) {
+            updatePlan(editingPlan.id, { title: modalTitle.trim(), visibility: modalVisibility });
         } else {
-            createBoard(modalTitle.trim(), modalVisibility);
+            createPlan(modalTitle.trim(), modalVisibility);
         }
         setShowModal(false);
     };
 
     const handleDeleteFromModal = () => {
-        if (editingBoard) {
-            setConfirmDelete(editingBoard.id);
+        if (editingPlan) {
+            setConfirmDelete(editingPlan.id);
         }
     };
 
     const executeDelete = () => {
         if (confirmDelete) {
-            deleteBoard(confirmDelete);
+            deletePlan(confirmDelete);
             setConfirmDelete(null);
             setShowModal(false);
         }
@@ -90,7 +90,7 @@ export default function Dashboard() {
                             <rect x="3" y="14" width="7" height="7" rx="1" />
                             <rect x="14" y="14" width="7" height="7" rx="1" />
                         </svg>
-                        Meus Boards
+                        Meus Planejamentos
                     </div>
                 </div>
                 <div className="app-header-right">
@@ -128,45 +128,45 @@ export default function Dashboard() {
                         <button className="btn btn-glass" onClick={handleSearch}>Acessar</button>
                     </div>
                     <button className="btn btn-primary" onClick={openCreate}>
-                        <Plus size={16} /> Novo Board
+                        <Plus size={16} /> Novo Planejamento
                     </button>
                 </div>
 
-                {boards.length === 0 ? (
+                {plans.length === 0 ? (
                     <div className="empty-state glass-surface" style={{ padding: '64px 32px' }}>
                         <div className="empty-state-icon"><ClipboardList size={48} /></div>
-                        <p>Nenhum board criado ainda</p>
+                        <p>Nenhum planejamento criado ainda</p>
                         <button className="btn btn-primary" onClick={openCreate}>
-                            <Plus size={16} /> Criar primeiro board
+                            <Plus size={16} /> Criar primeiro planejamento
                         </button>
                     </div>
                 ) : (
                     <div className="boards-grid">
-                        {boards.map((board, idx) => (
+                        {plans.map((plan, idx) => (
                             <div
-                                key={board.id}
+                                key={plan.id}
                                 className="glass-card board-card animate-fade-in-up"
                                 style={{ animationDelay: `${idx * 0.05}s` }}
-                                onClick={() => navigate(`/board/${board.id}`)}
+                                onClick={() => navigate(`/plan/${plan.id}`)}
                             >
                                 <div className="board-card-header">
                                     <div>
-                                        <div className="board-card-title">{board.title}</div>
+                                        <div className="board-card-title">{plan.title}</div>
                                         <div className="board-card-meta">
                                             <span>ID: #{idx + 1}</span>
                                             <span className="visibility-badge">
-                                                {board.visibility === 'Privado' ? <Lock size={12} /> : <Globe size={12} />} {board.visibility}
+                                                {plan.visibility === 'Privado' ? <Lock size={12} /> : <Globe size={12} />} {plan.visibility}
                                             </span>
                                         </div>
                                     </div>
                                     <div className="board-card-actions">
-                                        <button className="btn-icon" onClick={(e) => openEdit(e, board)} title="Editar">
+                                        <button className="btn-icon" onClick={(e) => openEdit(e, plan)} title="Editar">
                                             <Edit2 size={16} />
                                         </button>
                                     </div>
                                 </div>
                                 <div className="board-card-date">
-                                    Criado em {formatCreatedDate(board.createdAt)}
+                                    Criado em {formatCreatedDate(plan.createdAt)}
                                 </div>
                             </div>
                         ))}
@@ -179,7 +179,7 @@ export default function Dashboard() {
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>{editingBoard ? 'Editar Board' : 'Novo Board'}</h2>
+                            <h2>{editingPlan ? 'Editar Planejamento' : 'Novo Planejamento'}</h2>
                             <button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button>
                         </div>
                         <div className="modal-body">
@@ -188,7 +188,7 @@ export default function Dashboard() {
                                 <input
                                     type="text"
                                     className="glass-input"
-                                    placeholder="Nome do board"
+                                    placeholder="Nome do planejamento"
                                     value={modalTitle}
                                     onChange={(e) => setModalTitle(e.target.value)}
                                     autoFocus
@@ -208,7 +208,7 @@ export default function Dashboard() {
                         </div>
                         <div className="modal-footer">
                             <div>
-                                {editingBoard && (
+                                {editingPlan && (
                                     <button className="btn btn-danger" onClick={handleDeleteFromModal}>
                                         <Trash2 size={16} /> Excluir
                                     </button>
@@ -233,7 +233,7 @@ export default function Dashboard() {
                         </div>
                         <div className="modal-body">
                             <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
-                                Tem certeza que deseja excluir este board? Todos os objetivos e iniciativas serão removidos permanentemente.
+                                Tem certeza que deseja excluir este planejamento? Todos os objetivos e iniciativas serão removidos permanentemente.
                             </p>
                         </div>
                         <div className="modal-footer">
@@ -241,7 +241,7 @@ export default function Dashboard() {
                             <div className="modal-footer-right">
                                 <button className="btn btn-glass" onClick={() => setConfirmDelete(null)}>Cancelar</button>
                                 <button className="btn btn-danger" onClick={executeDelete}>
-                                    <Trash2 size={16} /> Excluir Board
+                                    <Trash2 size={16} /> Excluir Planejamento
                                 </button>
                             </div>
                         </div>

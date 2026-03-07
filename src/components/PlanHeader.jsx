@@ -6,7 +6,7 @@ import { ArrowLeft, Compass, Target, Map, GitMerge, BarChart3, Sun, Moon, LogOut
 import TeamManager from './TeamManager';
 import TagManager from './TagManager';
 
-export default function BoardHeader({ board, boardId, currentView, children }) {
+export default function PlanHeader({ plan, planId, currentView, children }) {
     const navigate = useNavigate();
     const { logout } = useAuth();
     const { addToast } = useToast();
@@ -76,7 +76,7 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     ];
 
-    if (!board) return null;
+    if (!plan) return null;
 
     return (
         <>
@@ -93,12 +93,12 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
                     </button>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>/</span>
                     <div>
-                        <h1 style={{ fontSize: '1.1rem', color: 'var(--accent)', margin: 0, lineHeight: 1.2 }}>{board.title}</h1>
+                        <h1 style={{ fontSize: '1.1rem', color: 'var(--accent)', margin: 0, lineHeight: 1.2 }}>{plan.title}</h1>
                     </div>
                 </div>
 
-                <div className="flex-1 flex justify-center">
-                    <div className="bg-black/20 rounded-lg p-1 flex gap-1 border border-white/5">
+                <div className="header-nav flex-1 flex justify-center">
+                    <div className="bg-black/20 rounded-lg p-1 flex gap-1 border border-white/5" style={{ whiteSpace: 'nowrap' }}>
                         {tabs.map(tab => {
                             const Icon = tab.icon;
                             const isActive = currentView === tab.id;
@@ -112,7 +112,7 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
                                         outline: 'none',
                                         ...(isActive ? { boxShadow: '0 4px 16px rgba(0,134,255,0.3)' } : {}),
                                     }}
-                                    onClick={() => navigate(`/board/${boardId}/${tab.id}`)}
+                                    onClick={() => navigate(`/plan/${planId}/${tab.id}`)}
                                 >
                                     <Icon size={16} />
                                     <span className="font-medium hidden sm:inline">{tab.label}</span>
@@ -179,14 +179,14 @@ export default function BoardHeader({ board, boardId, currentView, children }) {
 
             {showTeamManager && (
                 <TeamManager
-                    boardId={boardId}
+                    planId={planId}
                     onClose={() => setShowTeamManager(false)}
                 />
             )}
 
             {showTagManager && (
                 <TagManager
-                    boardId={boardId}
+                    planId={planId}
                     onClose={() => setShowTagManager(false)}
                 />
             )}

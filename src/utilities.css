@@ -803,6 +803,20 @@
     .h-auto-md {
         height: auto !important;
     }
+
+    .border-b-md {
+        border-bottom: 1px solid var(--glass-border) !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .hide-lg {
+        display: none !important;
+    }
+}
+
+.col-span-2 {
+    grid-column: span 2;
 }
 
 /* Animations that I might have used */

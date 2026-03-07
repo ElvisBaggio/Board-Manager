@@ -5,19 +5,19 @@ const router = express.Router();
 
 // ——— Team Members ———
 
-// Get all members for a board
+// Get all members for a plan
 router.get('/members', async (req, res) => {
-    const { boardId } = req.query;
-    if (!boardId) return res.status(400).json({ error: 'boardId obrigatório' });
+    const { planId } = req.query;
+    if (!planId) return res.status(400).json({ error: 'planId obrigatório' });
 
     try {
         const rows = await db('team_members')
-            .where('board_id', boardId)
+            .where('plan_id', planId)
             .orderBy('name', 'asc');
 
         const members = rows.map(m => ({
             ...m,
-            boardId: m.board_id,
+            planId: m.plan_id,
             roleTitle: m.role_title,
             avatarColor: m.avatar_color,
             capacityHoursPerQuarter: m.capacity_hours_per_quarter,
@@ -32,21 +32,21 @@ router.get('/members', async (req, res) => {
 
 // Create a member
 router.post('/members', async (req, res) => {
-    const { id, boardId, name, roleTitle, avatarColor, capacityHoursPerQuarter } = req.body;
-    if (!id || !boardId || !name) {
-        return res.status(400).json({ error: 'id, boardId e name obrigatórios' });
+    const { id, planId, name, roleTitle, avatarColor, capacityHoursPerQuarter } = req.body;
+    if (!id || !planId || !name) {
+        return res.status(400).json({ error: 'id, planId e name obrigatórios' });
     }
 
     try {
         await db('team_members').insert({
             id,
-            board_id: boardId,
+            plan_id: planId,
             name,
             role_title: roleTitle || '',
             avatar_color: avatarColor || '#3498db',
             capacity_hours_per_quarter: capacityHoursPerQuarter || 480,
         });
-        res.status(201).json({ id, boardId, name, roleTitle, avatarColor, capacityHoursPerQuarter });
+        res.status(201).json({ id, planId, name, roleTitle, avatarColor, capacityHoursPerQuarter });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao criar membro' });
@@ -95,7 +95,7 @@ router.delete('/members/:id', async (req, res) => {
 
 // Get allocations for a board or feature
 router.get('/allocations', async (req, res) => {
-    const { boardId, featureId } = req.query;
+    const { planId, featureId } = req.query;
 
     try {
         let query = db('resource_allocations')
@@ -103,10 +103,10 @@ router.get('/allocations', async (req, res) => {
 
         if (featureId) {
             query = query.where('resource_allocations.feature_id', featureId);
-        } else if (boardId) {
-            query = query.where('team_members.board_id', boardId);
+        } else if (planId) {
+            query = query.where('team_members.plan_id', planId);
         } else {
-            return res.status(400).json({ error: 'boardId ou featureId obrigatório' });
+            return res.status(400).json({ error: 'planId ou featureId obrigatório' });
         }
 
         const rows = await query

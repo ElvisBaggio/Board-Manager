@@ -3,7 +3,7 @@ import { X, Edit2, Trash2, Plus } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import ConfirmDialog from './ConfirmDialog';
 
-export default function TagManager({ boardId, onClose }) {
+export default function TagManager({ planId, onClose }) {
     const { addToast } = useToast();
     const [tags, setTags] = useState([]);
     const [newName, setNewName] = useState('');
@@ -18,7 +18,7 @@ export default function TagManager({ boardId, onClose }) {
 
     const fetchTags = async () => {
         try {
-            const res = await fetch(`/api/tags?boardId=${boardId}`);
+            const res = await fetch(`/api/tags?planId=${planId}`);
             const data = await res.json();
             setTags(data);
         } catch (e) {
@@ -28,7 +28,7 @@ export default function TagManager({ boardId, onClose }) {
         }
     };
 
-    useEffect(() => { fetchTags(); }, [boardId]);
+    useEffect(() => { fetchTags(); }, [planId]);
 
     const handleCreate = async () => {
         if (!newName.trim()) return;
@@ -38,7 +38,7 @@ export default function TagManager({ boardId, onClose }) {
             await fetch('/api/tags', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, boardId, name, color: newColor }),
+                body: JSON.stringify({ id, planId, name, color: newColor }),
             });
             setNewName('');
             setNewColor('#3498db');

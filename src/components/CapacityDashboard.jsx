@@ -6,9 +6,9 @@ import { aggregateCapacity, detectOverAllocation } from '../utils/calculations';
 /**
  * Capacity Dashboard — shows allocated vs. available hours per quarter per member.
  */
-export default function CapacityDashboard({ boardId, year, onClose }) {
-    const { members } = useTeamMembers(boardId);
-    const { allocations } = useAllocations(boardId);
+export default function CapacityDashboard({ planId, year, onClose }) {
+    const { members } = useTeamMembers(planId);
+    const { allocations } = useAllocations(planId);
 
     const quarterData = useMemo(() =>
         aggregateCapacity(members, allocations, year),

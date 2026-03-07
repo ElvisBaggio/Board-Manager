@@ -2,28 +2,28 @@ import { useState, useCallback, useEffect } from 'react';
 
 const API = 'http://localhost:3001/api/risks';
 
-export function useRisks(boardId) {
+export function useRisks(planId) {
     const [risks, setRisks] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const fetchRisks = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`${API}?boardId=${boardId}`);
+            const res = await fetch(`${API}?planId=${planId}`);
             if (res.ok) setRisks(await res.json());
         } catch (err) {
             console.error('Erro ao buscar riscos:', err);
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     useEffect(() => { fetchRisks(); }, [fetchRisks]);
 
     const createRisk = useCallback(async (data) => {
         const id = 'risk-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-        const risk = { id, boardId, ...data, score: (data.impact || 1) * (data.probability || 1) };
+        const risk = { id, planId, ...data, score: (data.impact || 1) * (data.probability || 1) };
 
         setRisks(prev => [...prev, risk]);
 
@@ -38,7 +38,7 @@ export function useRisks(boardId) {
             console.error(err);
             fetchRisks();
         }
-    }, [boardId, fetchRisks]);
+    }, [planId, fetchRisks]);
 
     const updateRisk = useCallback(async (id, data) => {
         setRisks(prev => prev.map(r => r.id === id ? { ...r, ...data, score: (data.impact ?? r.impact) * (data.probability ?? r.probability) } : r));

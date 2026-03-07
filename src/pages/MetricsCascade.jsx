@@ -1,24 +1,24 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useBoards } from '../hooks/useBoards';
+import { usePlans } from '../hooks/usePlans';
 import { useStrategicChoices } from '../hooks/useStrategicChoices';
 import { useGoals } from '../hooks/useGoals';
 import { useBoardOKRs } from '../hooks/useOKRs';
 import { useIndicators } from '../hooks/useIndicators';
-import BoardHeader from '../components/BoardHeader';
+import PlanHeader from '../components/PlanHeader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OKRPanel from '../components/OKRPanel';
 import { Filter, Activity, Target, Crosshair, Zap, ArrowDown, Plus, Edit2, Trash2, X, GitMerge } from 'lucide-react';
 
 export default function MetricsCascade() {
-    const { id: boardId } = useParams();
+    const { id: planId } = useParams();
     const { user } = useAuth();
 
-    const { getBoard, loadBoardData, getLanes, getFeaturesForBoard } = useBoards(user?.id);
-    const { choices, fetchChoices } = useStrategicChoices(boardId);
-    const { boardGoals, fetchBoardGoals, addGoal, updateGoal, deleteGoal } = useGoals(boardId);
-    const { allKeyResults: boardKeyResults, refetch: fetchOKRs } = useBoardOKRs(boardId);
+    const { getPlan, loadPlanData, getLanes, getFeaturesForPlan } = usePlans(user?.id);
+    const { choices, fetchChoices } = useStrategicChoices(planId);
+    const { boardGoals, fetchBoardGoals, addGoal, updateGoal, deleteGoal } = useGoals(planId);
+    const { allKeyResults: boardKeyResults, refetch: fetchOKRs } = useBoardOKRs(planId);
     const {
         boardProductIndicators, efficiencyIndicators,
         fetchBoardProductIndicators, fetchEfficiencyIndicators,
@@ -26,11 +26,11 @@ export default function MetricsCascade() {
         updateProductIndicator, deleteProductIndicator,
         updateEfficiencyIndicator, deleteEfficiencyIndicator,
         addEfficiencyIndicator
-    } = useIndicators(boardId);
+    } = useIndicators(planId);
 
-    const board = getBoard(boardId);
-    const boardLanes = getLanes(boardId);
-    const boardFeatures = getFeaturesForBoard(boardId) || [];
+    const plan = getPlan(planId);
+    const boardLanes = getLanes(planId);
+    const boardFeatures = getFeaturesForPlan(planId) || [];
 
     const [selectedChoiceId, setSelectedChoiceId] = useState('all');
 
@@ -45,15 +45,15 @@ export default function MetricsCascade() {
     const [editingLevel, setEditingLevel] = useState(null);
 
     useEffect(() => {
-        if (boardId) {
-            loadBoardData(boardId);
+        if (planId) {
+            loadPlanData(planId);
             fetchChoices();
             fetchBoardGoals();
             fetchOKRs();
             fetchBoardProductIndicators();
             fetchEfficiencyIndicators();
         }
-    }, [boardId, loadBoardData, fetchChoices, fetchBoardGoals, fetchOKRs, fetchBoardProductIndicators, fetchEfficiencyIndicators]);
+    }, [planId, loadBoardData, fetchChoices, fetchBoardGoals, fetchOKRs, fetchBoardProductIndicators, fetchEfficiencyIndicators]);
 
     const filteredData = useMemo(() => {
         let goals = Array.isArray(boardGoals) ? boardGoals : [];
@@ -211,7 +211,7 @@ export default function MetricsCascade() {
         });
     };
 
-    if (!board) return <div className="p-8">Carregando...</div>;
+    if (!plan) return <div className="p-8">Carregando...</div>;
 
     const renderCard = (item, current, target, unit, subtext, type = 'success', level, extraFields = {}) => {
         const progress = target !== '-' && target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
@@ -257,7 +257,7 @@ export default function MetricsCascade() {
 
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-[var(--bg-color)] text-[var(--text-color)]">
-            <BoardHeader board={board} boardId={boardId} currentView="metrics">
+            <PlanHeader plan={plan} planId={planId} currentView="metrics">
                 <div className="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-full border border-white/10">
                     <Filter size={14} className="text-muted" />
                     <select
@@ -277,7 +277,7 @@ export default function MetricsCascade() {
                 >
                     <GitMerge size={14} /> OKRs
                 </button>
-            </BoardHeader>
+            </PlanHeader>
 
             <main className="flex-1 overflow-y-auto p-8 relative">
                 <div className="max-w-7xl mx-auto flex flex-col gap-2 relative">
@@ -286,7 +286,7 @@ export default function MetricsCascade() {
 
                     {/* Layer 1: Goals */}
                     <div className="mb-2">
-                        <div className="flex items-center justify-center gap-4 mb-4">
+                        <div className="metrics-level-header flex items-center justify-center gap-4 mb-4">
                             <h3 className="text-sm font-bold uppercase tracking-widest text-[#f39c12] flex items-center gap-2 m-0 mt-4">
                                 <Target size={16} /> Nível 1: Goals & KPIs (Negócio)
                             </h3>
@@ -294,7 +294,7 @@ export default function MetricsCascade() {
                                 <Plus size={16} />
                             </button>
                         </div>
-                        <div className="flex flex-wrap gap-4 justify-center">
+                        <div className="metrics-grid">
                             {filteredData.goals.length === 0 && <p className="text-muted text-sm border border-dashed border-white/10 p-6 rounded-lg w-full text-center animate-fade-in-up mx-4">Nenhum Goal definido para esta escolha (Nível de Negócio).</p>}
                             {filteredData.goals.map(g => renderCard(g, g.current_value, g.target_value, g.unit, `Escolha: ${g.choice_title || 'N/A'}`, 'success', 'goal'))}
                         </div>
@@ -304,7 +304,7 @@ export default function MetricsCascade() {
 
                     {/* Layer 2: OKRs */}
                     <div className="mb-2">
-                        <div className="flex items-center justify-center gap-4 mb-4">
+                        <div className="metrics-level-header flex items-center justify-center gap-4 mb-4">
                             <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--success)] flex items-center gap-2 m-0">
                                 <Crosshair size={16} /> Nível 2: Key Results (Tático)
                             </h3>
@@ -312,7 +312,7 @@ export default function MetricsCascade() {
                                 <Plus size={16} />
                             </button>
                         </div>
-                        <div className="flex flex-wrap gap-4 justify-center">
+                        <div className="metrics-grid">
                             {filteredData.krs.length === 0 && <p className="text-muted text-sm border border-dashed border-white/10 p-6 rounded-lg w-full text-center animate-fade-in-up mx-4">Nenhum Key Result de Objetivos vinculados.</p>}
                             {filteredData.krs.map(kr => renderCard(kr, kr.current_value, kr.target_value, kr.unit, `Obj: ${kr.laneTitle}`, 'success', 'kr'))}
                         </div>
@@ -322,7 +322,7 @@ export default function MetricsCascade() {
 
                     {/* Layer 3: Product Indicators */}
                     <div className="mb-2">
-                        <div className="flex items-center justify-center gap-4 mb-4">
+                        <div className="metrics-level-header flex items-center justify-center gap-4 mb-4">
                             <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--accent)] flex items-center gap-2 m-0">
                                 <Activity size={16} /> Nível 3: Produto (Iniciativas)
                             </h3>
@@ -330,7 +330,7 @@ export default function MetricsCascade() {
                                 <Plus size={16} />
                             </button>
                         </div>
-                        <div className="flex flex-wrap gap-4 justify-center">
+                        <div className="metrics-grid">
                             {filteredData.productIndics.length === 0 && <p className="text-muted text-sm border border-dashed border-white/10 p-6 rounded-lg w-full text-center animate-fade-in-up mx-4">Nenhum Indicador de Produto configurado.</p>}
                             {filteredData.productIndics.map(ind => renderCard(ind, ind.current_value, ind.target_value, ind.unit, `Feat: ${ind.feature_title}`, 'success', 'indicator'))}
                         </div>
@@ -340,7 +340,7 @@ export default function MetricsCascade() {
 
                     {/* Layer 4: Efficiency */}
                     <div>
-                        <div className="flex items-center justify-center gap-4 mb-4">
+                        <div className="metrics-level-header flex items-center justify-center gap-4 mb-4">
                             <h3 className="text-sm font-bold uppercase tracking-widest text-purple-400 flex items-center gap-2 m-0">
                                 <Zap size={16} /> Nível 4: Eficiência (Operacional)
                             </h3>
@@ -348,7 +348,7 @@ export default function MetricsCascade() {
                                 <Plus size={16} />
                             </button>
                         </div>
-                        <div className="flex flex-wrap gap-4 justify-center">
+                        <div className="metrics-grid">
                             {filteredData.efficiency.length === 0 && <p className="text-muted text-sm border border-dashed border-white/10 p-6 rounded-lg w-full text-center animate-fade-in-up mx-4">Nenhum Indicador de Eficiência definido no momento.</p>}
                             {filteredData.efficiency.map(ind => renderCard(ind, ind.value, '-', ind.unit, `Período: ${ind.period}`, 'efficiency', 'efficiency'))}
                         </div>
@@ -591,7 +591,7 @@ export default function MetricsCascade() {
 
             {showOKRPanel && (
                 <OKRPanel
-                    boardId={boardId}
+                    planId={planId}
                     lanes={boardLanes}
                     onClose={() => setShowOKRPanel(false)}
                 />

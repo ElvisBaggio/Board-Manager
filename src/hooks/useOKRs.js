@@ -73,22 +73,22 @@ export function useOKRs(laneId) {
 }
 
 // Board-level hook (aggregates all KRs across lanes)
-export function useBoardOKRs(boardId) {
+export function useBoardOKRs(planId) {
     const [allKeyResults, setAllKeyResults] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const fetchAll = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`${API}/board?boardId=${boardId}`);
+            const res = await fetch(`${API}/board?planId=${planId}`);
             if (res.ok) setAllKeyResults(await res.json());
         } catch (err) {
             console.error('Erro ao buscar board OKRs:', err);
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 

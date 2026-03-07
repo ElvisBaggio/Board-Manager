@@ -11,7 +11,7 @@ const STATUS_LABELS = {
     'Blocked': 'Bloqueado',
 };
 
-export default function FeatureModal({ feature, onSave, onDelete, onClose, boardTags = [], boardId, user }) {
+export default function FeatureModal({ feature, onSave, onDelete, onClose, boardTags = [], planId, user }) {
     const [activeTab, setActiveTab] = useState('details');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -271,7 +271,7 @@ export default function FeatureModal({ feature, onSave, onDelete, onClose, board
                             </div>
                         </div>
                     ) : activeTab === 'execution' ? (
-                        <ExecutionPanel featureId={feature.id} boardId={boardId} />
+                        <ExecutionPanel featureId={feature.id} planId={planId} />
                     ) : (
                         <div className="h-full overflow-y-auto pr-2 custom-scrollbar">
                             <CommentsPanel featureId={feature.id} user={user} />

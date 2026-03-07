@@ -9,8 +9,8 @@ const PROBABILITY_LABELS = ['', 'Rara', 'Improvável', 'Possível', 'Provável',
 /**
  * 5×5 Risk Matrix — impact × probability grid with positioned risks.
  */
-export default function RiskMatrix({ boardId, onClose }) {
-    const { risks, createRisk, updateRisk, deleteRisk } = useRisks(boardId);
+export default function RiskMatrix({ planId, onClose }) {
+    const { risks, createRisk, updateRisk, deleteRisk } = useRisks(planId);
     const [showForm, setShowForm] = useState(false);
     const [editingRisk, setEditingRisk] = useState(null);
     const [form, setForm] = useState({ title: '', description: '', impact: 3, probability: 3, mitigation: '', status: 'Open' });

@@ -3,20 +3,20 @@ import db from '../db.js';
 
 const router = express.Router();
 
-// Get all lanes for a board
+// Get all lanes for a plan
 router.get('/', async (req, res) => {
-    const boardId = req.query.boardId;
-    if (!boardId) return res.status(400).json({ error: 'boardId obrigatório' });
+    const planId = req.query.planId;
+    if (!planId) return res.status(400).json({ error: 'planId obrigatório' });
 
     try {
         const rows = await db('lanes')
-            .where('board_id', boardId)
+            .where('plan_id', planId)
             .orderBy('sort_order', 'asc')
             .orderBy('created_at', 'asc');
 
         const lanes = rows.map(l => ({
             ...l,
-            boardId: l.board_id,
+            planId: l.plan_id,
             sortOrder: l.sort_order,
             strategicChoiceId: l.strategic_choice_id,
             problemOpportunity: l.problem_opportunity,
@@ -30,16 +30,16 @@ router.get('/', async (req, res) => {
 
 // Create a lane
 router.post('/', async (req, res) => {
-    const { id, boardId, title, strategicChoiceId, problemOpportunity } = req.body;
+    const { id, planId, title, strategicChoiceId, problemOpportunity } = req.body;
     try {
         await db('lanes').insert({
             id,
-            board_id: boardId,
+            plan_id: planId,
             title,
             strategic_choice_id: strategicChoiceId || null,
             problem_opportunity: problemOpportunity || '',
         });
-        res.status(201).json({ id, boardId, title, strategicChoiceId, problemOpportunity });
+        res.status(201).json({ id, planId, title, strategicChoiceId, problemOpportunity });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao criar lane' });

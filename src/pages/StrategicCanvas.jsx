@@ -1,23 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useBoards } from '../hooks/useBoards';
+import { usePlans } from '../hooks/usePlans';
 import { useStrategicChoices } from '../hooks/useStrategicChoices';
 import { useGoals } from '../hooks/useGoals';
-import BoardHeader from '../components/BoardHeader';
-import BoardWelcome from '../components/BoardWelcome';
+import PlanHeader from '../components/PlanHeader';
+import PlanWelcome from '../components/PlanWelcome';
 import { Edit2, Check, Target, Crosshair, BarChart3, TrendingUp } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 export default function StrategicCanvas() {
-    const { id: boardId } = useParams();
+    const { id: planId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { getBoard, loadBoardData, updateBoard } = useBoards(user?.id);
-    const { choices, fetchChoices } = useStrategicChoices(boardId);
-    const { boardGoals, fetchBoardGoals } = useGoals(boardId);
+    const { getPlan, loadPlanData, updatePlan } = usePlans(user?.id);
+    const { choices, fetchChoices } = useStrategicChoices(planId);
+    const { boardGoals, fetchBoardGoals } = useGoals(planId);
 
-    const board = getBoard(boardId);
+    const plan = getPlan(planId);
 
     const { addToast } = useToast();
     const [editingField, setEditingField] = useState(null);
@@ -28,37 +28,37 @@ export default function StrategicCanvas() {
     });
 
     useEffect(() => {
-        if (boardId) {
-            loadBoardData(boardId);
+        if (planId) {
+            loadPlanData(planId);
             fetchChoices();
             fetchBoardGoals();
         }
-    }, [boardId, loadBoardData, fetchChoices, fetchBoardGoals]);
+    }, [planId, loadPlanData, fetchChoices, fetchBoardGoals]);
 
     useEffect(() => {
-        if (board) {
+        if (plan) {
             setFieldValues({
-                justCause: board.justCause || '',
-                vision: board.vision || '',
-                mission: board.mission || ''
+                justCause: plan.justCause || '',
+                vision: plan.vision || '',
+                mission: plan.mission || ''
             });
         }
-    }, [board]);
+    }, [plan]);
 
     const handleSaveField = async (field) => {
-        await updateBoard(boardId, { [field]: fieldValues[field] });
+        await updatePlan(planId, { [field]: fieldValues[field] });
         setEditingField(null);
         addToast('Salvo com sucesso.', 'success');
     };
 
-    if (!board) return <div className="p-8">Carregando...</div>;
+    if (!plan) return <div className="p-8">Carregando...</div>;
 
     const renderEditableField = (field, label, icon) => {
         const isEditing = editingField === field;
         const value = fieldValues[field];
 
         return (
-            <div className="glass-surface p-6 rounded-lg mb-6 relative group">
+            <div className="canvas-field glass-surface p-6 rounded-lg mb-6 relative group">
                 <div className="flex items-center gap-2 mb-3 text-accent font-bold">
                     {icon}
                     <h3 className="m-0 uppercase tracking-wider text-sm flex-1">{label}</h3>
@@ -106,18 +106,18 @@ export default function StrategicCanvas() {
 
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-[var(--bg-color)] text-[var(--text-color)]">
-            <BoardHeader board={board} boardId={boardId} currentView="canvas" />
+            <PlanHeader plan={plan} planId={planId} currentView="canvas" />
 
-            <main className="flex-1 overflow-y-auto p-8">
+            <main className="flex-1 overflow-y-auto" style={{ padding: 'clamp(16px, 3vw, 32px)' }}>
                 <div className="max-w-6xl mx-auto">
 
-                    {isEmptyBoard && <BoardWelcome boardId={boardId} />}
+                    {isEmptyPlan && <PlanWelcome planId={planId} />}
 
                     {/* Top Layer: Purpose & Identity */}
                     <div className="mb-12 animate-fade-in">
                         {renderEditableField('justCause', 'Causa Justa', <Target size={18} />)}
 
-                        <div className="grid grid-cols-2 gap-6 mt-6">
+                        <div className="canvas-grid grid grid-cols-2 gap-6 mt-6">
                             {renderEditableField('vision', 'Visão', <Crosshair size={18} />)}
                             {renderEditableField('mission', 'Missão', <TrendingUp size={18} />)}
                         </div>
@@ -128,7 +128,7 @@ export default function StrategicCanvas() {
                             <BarChart3 size={24} className="text-accent" />
                             Escolhas Estratégicas & Metas (O que perseguimos vs Como medimos)
                         </h2>
-                        <button className="btn btn-primary" onClick={() => navigate(`/board/${boardId}/choices`)}>
+                        <button className="btn btn-primary" onClick={() => navigate(`/plan/${planId}/choices`)}>
                             Gerenciar Escolhas
                         </button>
                     </div>
@@ -139,7 +139,7 @@ export default function StrategicCanvas() {
                             <div className="empty-state glass-surface animate-fade-in-up" style={{ padding: '64px 32px' }}>
                                 <div className="empty-state-icon"><Target size={48} /></div>
                                 <p>Nenhuma escolha estratégica definida</p>
-                                <button className="btn btn-primary mt-4" onClick={() => navigate(`/board/${boardId}/choices`)}>
+                                <button className="btn btn-primary mt-4" onClick={() => navigate(`/plan/${planId}/choices`)}>
                                     <Target size={16} /> Criar Primeira Escolha
                                 </button>
                             </div>
@@ -147,7 +147,7 @@ export default function StrategicCanvas() {
                             choices.map((choice, idx) => {
                                 const goals = getGoalsForChoice(choice.id);
                                 return (
-                                    <div key={choice.id} className="glass-surface rounded-lg overflow-hidden flex flex-col-md border-l-4 animate-fade-in-up cursor-pointer hover:border-opacity-100 transition-all" style={{ borderColor: choice.color, animationDelay: `${idx * 0.05}s` }} onClick={() => navigate(`/board/${boardId}/choices`)}>
+                                    <div key={choice.id} className="glass-surface rounded-lg overflow-hidden flex flex-col-md border-l-4 animate-fade-in-up cursor-pointer hover:border-opacity-100 transition-all" style={{ borderColor: choice.color, animationDelay: `${idx * 0.05}s` }} onClick={() => navigate(`/plan/${planId}/choices`)}>
                                         {/* Left Side: The Choice */}
                                         <div className="w-1/2 w-full-md p-6 border-r border-r-0-md border-b-md border-[var(--border-color)]">
                                             <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
@@ -163,7 +163,7 @@ export default function StrategicCanvas() {
                                                 </div>
                                                 <button
                                                     className="glass-badge px-3 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
-                                                    onClick={(e) => { e.stopPropagation(); navigate(`/board/${boardId}/roadmap`); }}
+                                                    onClick={(e) => { e.stopPropagation(); navigate(`/plan/${planId}/roadmap`); }}
                                                 >
                                                     Ver no Roadmap →
                                                 </button>

@@ -28,7 +28,7 @@ const STEPS = [
     },
 ];
 
-export default function BoardWelcome({ boardId }) {
+export default function PlanWelcome({ planId }) {
     const navigate = useNavigate();
 
     return (
@@ -37,7 +37,7 @@ export default function BoardWelcome({ boardId }) {
                 <Sparkles size={24} className="text-[var(--accent)]" />
                 <div>
                     <h3 className="text-lg font-bold m-0">Por onde começar?</h3>
-                    <p className="text-sm text-muted m-0">Este board está pronto para você. Siga os passos abaixo para construir sua estratégia.</p>
+                    <p className="text-sm text-muted m-0">Este planejamento está pronto para você. Siga os passos abaixo para construir sua estratégia.</p>
                 </div>
             </div>
 
@@ -46,7 +46,7 @@ export default function BoardWelcome({ boardId }) {
                     <div
                         key={step}
                         className="flex flex-col gap-3 p-5 rounded-lg bg-black/20 border border-white/5 hover:border-[var(--accent)]/30 transition-all cursor-pointer group"
-                        onClick={() => navigate(`/board/${boardId}/${view}`)}
+                        onClick={() => navigate(`/plan/${planId}/${view}`)}
                     >
                         <div className="flex items-center gap-3">
                             <div

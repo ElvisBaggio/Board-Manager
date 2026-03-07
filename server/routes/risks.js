@@ -3,19 +3,19 @@ import db from '../db.js';
 
 const router = express.Router();
 
-// Get all risks for a board
+// Get all risks for a plan
 router.get('/', async (req, res) => {
-    const { boardId } = req.query;
-    if (!boardId) return res.status(400).json({ error: 'boardId obrigatório' });
+    const { planId } = req.query;
+    if (!planId) return res.status(400).json({ error: 'planId obrigatório' });
 
     try {
         const rows = await db('risks')
-            .where('board_id', boardId)
+            .where('plan_id', planId)
             .orderBy('created_at', 'asc');
 
         const risks = rows.map(r => ({
             ...r,
-            boardId: r.board_id,
+            planId: r.plan_id,
             createdAt: r.created_at,
             score: r.impact * r.probability,
         }));
@@ -28,15 +28,15 @@ router.get('/', async (req, res) => {
 
 // Create a risk
 router.post('/', async (req, res) => {
-    const { id, boardId, title, description, impact, probability, status, mitigation, owner } = req.body;
-    if (!id || !boardId || !title) {
-        return res.status(400).json({ error: 'id, boardId e title obrigatórios' });
+    const { id, planId, title, description, impact, probability, status, mitigation, owner } = req.body;
+    if (!id || !planId || !title) {
+        return res.status(400).json({ error: 'id, planId e title obrigatórios' });
     }
 
     try {
         await db('risks').insert({
             id,
-            board_id: boardId,
+            plan_id: planId,
             title,
             description: description || '',
             impact: impact || 1,
@@ -46,7 +46,7 @@ router.post('/', async (req, res) => {
             owner: owner || '',
         });
         res.status(201).json({
-            id, boardId, title, description, impact, probability, status, mitigation, owner,
+            id, planId, title, description, impact, probability, status, mitigation, owner,
             score: (impact || 1) * (probability || 1),
         });
     } catch (error) {

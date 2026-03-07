@@ -3,34 +3,34 @@ import db from '../db.js';
 
 const router = express.Router();
 
-// Get all boards for a user
+// Get all plans for a user
 router.get('/', async (req, res) => {
     const userId = req.query.userId;
     if (!userId) return res.status(400).json({ error: 'userId obrigatório' });
 
     try {
-        const rows = await db('boards')
+        const rows = await db('plans')
             .where('user_id', userId)
             .orderBy('created_at', 'desc');
 
-        const boards = rows.map(b => ({
+        const plans = rows.map(b => ({
             ...b,
             userId: b.user_id,
             justCause: b.just_cause,
             createdAt: b.created_at,
         }));
-        res.json(boards);
+        res.json(plans);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Erro ao buscar boards' });
+        res.status(500).json({ error: 'Erro ao buscar planejamentos' });
     }
 });
 
-// Create a new board
+// Create a new plan
 router.post('/', async (req, res) => {
     const { id, userId, title, visibility, justCause, vision, mission } = req.body;
     try {
-        await db('boards').insert({
+        await db('plans').insert({
             id,
             user_id: userId,
             title,
@@ -42,11 +42,11 @@ router.post('/', async (req, res) => {
         res.status(201).json({ id, userId, title, visibility, justCause, vision, mission });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Erro ao criar board' });
+        res.status(500).json({ error: 'Erro ao criar planejamento' });
     }
 });
 
-// Update a board
+// Update a plan
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { title, visibility, justCause, vision, mission } = req.body;
@@ -62,28 +62,28 @@ router.put('/:id', async (req, res) => {
             return res.status(400).json({ error: 'Nada para atualizar' });
         }
 
-        const count = await db('boards')
+        const count = await db('plans')
             .where('id', id)
             .update(updateData);
 
-        if (count === 0) return res.status(404).json({ error: 'Board não encontrado' });
+        if (count === 0) return res.status(404).json({ error: 'Planejamento não encontrado' });
         res.json({ success: true });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Erro ao atualizar board' });
+        res.status(500).json({ error: 'Erro ao atualizar planejamento' });
     }
 });
 
-// Delete a board
+// Delete a plan
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const count = await db('boards').where('id', id).del();
-        if (count === 0) return res.status(404).json({ error: 'Board não encontrado' });
+        const count = await db('plans').where('id', id).del();
+        if (count === 0) return res.status(404).json({ error: 'Planejamento não encontrado' });
         res.json({ success: true });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Erro ao deletar board' });
+        res.status(500).json({ error: 'Erro ao deletar planejamento' });
     }
 });
 

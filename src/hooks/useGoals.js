@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '../context/ToastContext';
 
-export function useGoals(boardId) {
+export function useGoals(planId) {
     const [boardGoals, setBoardGoals] = useState([]);
     const [choiceGoals, setChoiceGoals] = useState([]);
     const [goalObjectiveLinks, setGoalObjectiveLinks] = useState([]);
@@ -10,10 +10,10 @@ export function useGoals(boardId) {
     const { addToast } = useToast();
 
     const fetchBoardGoals = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/strategic-choices/board-goals/${boardId}`);
+            const res = await fetch(`/api/strategic-choices/plan-goals/${planId}`);
             if (!res.ok) throw new Error('Falha ao buscar goals');
             const data = await res.json();
             setBoardGoals(data);
@@ -23,13 +23,13 @@ export function useGoals(boardId) {
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     const fetchBoardGoalLinks = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/strategic-choices/board-goal-links/${boardId}`);
+            const res = await fetch(`/api/strategic-choices/plan-goal-links/${planId}`);
             if (!res.ok) throw new Error('Falha ao buscar links de goals');
             const data = await res.json();
             setGoalObjectiveLinks(data);
@@ -38,7 +38,7 @@ export function useGoals(boardId) {
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     const fetchGoalsByChoice = useCallback(async (choiceId) => {
         if (!choiceId) return;

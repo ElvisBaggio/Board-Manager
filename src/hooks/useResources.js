@@ -2,28 +2,28 @@ import { useState, useCallback, useEffect } from 'react';
 
 const API = 'http://localhost:3001/api/resources';
 
-export function useTeamMembers(boardId) {
+export function useTeamMembers(planId) {
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const fetchMembers = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`${API}/members?boardId=${boardId}`);
+            const res = await fetch(`${API}/members?planId=${planId}`);
             if (res.ok) setMembers(await res.json());
         } catch (err) {
             console.error('Erro ao buscar membros:', err);
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
     const createMember = useCallback(async (data) => {
         const id = 'member-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-        const member = { id, boardId, ...data };
+        const member = { id, planId, ...data };
 
         setMembers(prev => [...prev, member]);
 
@@ -38,7 +38,7 @@ export function useTeamMembers(boardId) {
             console.error(err);
             fetchMembers();
         }
-    }, [boardId, fetchMembers]);
+    }, [planId, fetchMembers]);
 
     const updateMember = useCallback(async (id, data) => {
         setMembers(prev => prev.map(m => m.id === id ? { ...m, ...data } : m));
@@ -71,22 +71,22 @@ export function useTeamMembers(boardId) {
     return { members, loading, createMember, updateMember, deleteMember, refetch: fetchMembers };
 }
 
-export function useAllocations(boardId) {
+export function useAllocations(planId) {
     const [allocations, setAllocations] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const fetchAllocations = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`${API}/allocations?boardId=${boardId}`);
+            const res = await fetch(`${API}/allocations?planId=${planId}`);
             if (res.ok) setAllocations(await res.json());
         } catch (err) {
             console.error('Erro ao buscar alocações:', err);
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     useEffect(() => { fetchAllocations(); }, [fetchAllocations]);
 

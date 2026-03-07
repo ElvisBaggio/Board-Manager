@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-export function useIndicators(boardId) {
+export function useIndicators(planId) {
     const [productIndicators, setProductIndicators] = useState([]);
     const [efficiencyIndicators, setEfficiencyIndicators] = useState([]);
     const [boardProductIndicators, setBoardProductIndicators] = useState([]);
@@ -26,10 +26,10 @@ export function useIndicators(boardId) {
     }, []);
 
     const fetchBoardProductIndicators = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/indicators/product/board/${boardId}`);
+            const res = await fetch(`/api/indicators/product/plan/${planId}`);
             if (!res.ok) throw new Error('Falha ao buscar indicadores do board');
             const data = await res.json();
             setBoardProductIndicators(data);
@@ -38,13 +38,13 @@ export function useIndicators(boardId) {
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     const fetchBoardKrLinks = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/indicators/board-kr-links/${boardId}`);
+            const res = await fetch(`/api/indicators/plan-kr-links/${planId}`);
             if (!res.ok) throw new Error('Falha ao buscar links de KRs');
             const data = await res.json();
             setIndicatorKrLinks(data);
@@ -53,7 +53,7 @@ export function useIndicators(boardId) {
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     const addProductIndicator = async (indicatorData) => {
         try {
@@ -132,10 +132,10 @@ export function useIndicators(boardId) {
     // === Efficiency Indicators ===
 
     const fetchEfficiencyIndicators = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/indicators/efficiency?boardId=${boardId}`);
+            const res = await fetch(`/api/indicators/efficiency?planId=${planId}`);
             if (!res.ok) throw new Error('Falha ao buscar indicadores');
             const data = await res.json();
             setEfficiencyIndicators(data);
@@ -144,14 +144,14 @@ export function useIndicators(boardId) {
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     const addEfficiencyIndicator = async (indicatorData) => {
         try {
             const res = await fetch('/api/indicators/efficiency', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...indicatorData, boardId }),
+                body: JSON.stringify({ ...indicatorData, planId }),
             });
             if (!res.ok) throw new Error('Falha ao salvar');
             const saved = await res.json();

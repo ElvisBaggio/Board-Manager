@@ -5,8 +5,8 @@ const router = express.Router();
 
 // Get features for a lane or all features for a board
 router.get('/', async (req, res) => {
-    const { laneId, boardId } = req.query;
-    if (!laneId && !boardId) return res.status(400).json({ error: 'laneId ou boardId obrigatório' });
+    const { laneId, planId } = req.query;
+    if (!laneId && !planId) return res.status(400).json({ error: 'laneId ou planId obrigatório' });
 
     try {
         let rows;
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
         } else {
             rows = await db('features')
                 .join('lanes', 'features.lane_id', 'lanes.id')
-                .where('lanes.board_id', boardId)
+                .where('lanes.plan_id', planId)
                 .select('features.*')
                 .orderBy('features.start_date', 'asc');
         }

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useBoards } from '../hooks/useBoards';
+import { usePlans } from '../hooks/usePlans';
 import { useGoals } from '../hooks/useGoals';
 import { useExecutionItems } from '../hooks/useExecutionItems';
-import BoardHeader from '../components/BoardHeader';
+import PlanHeader from '../components/PlanHeader';
 import CapacityDashboard from '../components/CapacityDashboard';
 import RiskMatrix from '../components/RiskMatrix';
 import { useTeamMembers } from '../hooks/useResources';
@@ -49,33 +49,33 @@ function ProgressBar({ pct, color }) {
 }
 
 export default function Analytics() {
-    const { id: boardId } = useParams();
+    const { id: planId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { boards, loadBoardData, getLanes, getFeaturesForBoard } = useBoards(user?.id);
-    const { boardGoals, fetchBoardGoals } = useGoals(boardId);
-    const { featureCounts, fetchBoardCounts } = useExecutionItems(boardId);
+    const { plans, loadPlanData, getLanes, getFeaturesForPlan } = usePlans(user?.id);
+    const { boardGoals, fetchBoardGoals } = useGoals(planId);
+    const { featureCounts, fetchBoardCounts } = useExecutionItems(planId);
     const [keyResults, setKeyResults] = useState([]);
     const [showCapacity, setShowCapacity] = useState(false);
     const [showRiskMatrix, setShowRiskMatrix] = useState(false);
     const [capacityYear] = useState(new Date().getFullYear());
-    const { members } = useTeamMembers(boardId);
-    const { risks } = useRisks(boardId);
+    const { members } = useTeamMembers(planId);
+    const { risks } = useRisks(planId);
 
     useEffect(() => {
-        if (!boardId) return;
-        loadBoardData(boardId);
+        if (!planId) return;
+        loadPlanData(planId);
         fetchBoardGoals();
         fetchBoardCounts();
-        fetch(`/api/okrs/board?boardId=${boardId}`)
+        fetch(`/api/okrs/board?planId=${planId}`)
             .then(r => r.ok ? r.json() : [])
             .then(setKeyResults)
             .catch(console.error);
-    }, [boardId]);
+    }, [planId]);
 
-    const board = boards.find(b => b.id === boardId);
-    const lanes = getLanes(boardId);
-    const features = getFeaturesForBoard(boardId);
+    const plan = plans.find(b => b.id === planId);
+    const lanes = getLanes(planId);
+    const features = getFeaturesForPlan(planId);
 
     const total = features.length;
     const byStatus = {
@@ -106,7 +106,7 @@ export default function Analytics() {
 
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-[var(--bg-color)] text-[var(--text-color)]">
-            <BoardHeader board={board} boardId={boardId} currentView="analytics" />
+            <PlanHeader plan={plan} planId={planId} currentView="analytics" />
 
             <main className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-6xl mx-auto">
@@ -121,7 +121,7 @@ export default function Analytics() {
                             <div className="empty-state-icon"><BarChart3 size={48} /></div>
                             <p>Nenhum dado disponível ainda.</p>
                             <p className="text-sm text-muted mt-2">Adicione iniciativas no Roadmap para ver o Analytics.</p>
-                            <button className="btn btn-primary mt-4" onClick={() => navigate(`/board/${boardId}/roadmap`)}>
+                            <button className="btn btn-primary mt-4" onClick={() => navigate(`/plan/${planId}/roadmap`)}>
                                 <Map size={16} /> Ir para o Roadmap
                             </button>
                         </div>
@@ -158,7 +158,7 @@ export default function Analytics() {
                                                 <button
                                                     className="text-xs mt-2 flex items-center gap-1 hover:underline"
                                                     style={{ color, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-                                                    onClick={() => navigate(`/board/${boardId}/${action.view}`)}
+                                                    onClick={() => navigate(`/plan/${planId}/${action.view}`)}
                                                 >
                                                     {action.label} <ArrowRight size={10} />
                                                 </button>
@@ -233,7 +233,7 @@ export default function Analytics() {
                                                         <button
                                                             className="text-xs mt-2 flex items-center gap-1 hover:underline"
                                                             style={{ color: 'var(--danger)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-                                                            onClick={() => navigate(`/board/${boardId}/metrics`)}
+                                                            onClick={() => navigate(`/plan/${planId}/metrics`)}
                                                         >
                                                             Atualizar em Métricas <ArrowRight size={10} />
                                                         </button>
@@ -340,7 +340,7 @@ export default function Analytics() {
 
             {showCapacity && (
                 <CapacityDashboard
-                    boardId={boardId}
+                    planId={planId}
                     year={capacityYear}
                     onClose={() => setShowCapacity(false)}
                 />
@@ -348,7 +348,7 @@ export default function Analytics() {
 
             {showRiskMatrix && (
                 <RiskMatrix
-                    boardId={boardId}
+                    planId={planId}
                     onClose={() => setShowRiskMatrix(false)}
                 />
             )}

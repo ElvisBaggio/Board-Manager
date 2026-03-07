@@ -1,14 +1,14 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useBoards } from '../hooks/useBoards';
+import { usePlans } from '../hooks/usePlans';
 import { useStrategicChoices } from '../hooks/useStrategicChoices';
 import { MONTHS } from '../utils/data';
 import FeatureBar, { STATUS_COLORS } from '../components/FeatureBar';
 import FeatureModal from '../components/FeatureModal';
 import ImportModal from '../components/ImportModal';
 import HealthIndicator from '../components/HealthIndicator';
-import BoardHeader from '../components/BoardHeader';
+import PlanHeader from '../components/PlanHeader';
 import { useToast } from '../context/ToastContext';
 import { Filter, Plus, ChevronLeft, ChevronRight, GripVertical, Upload, Trash2, X, Target, MoreHorizontal } from 'lucide-react';
 
@@ -33,26 +33,26 @@ const STATUS_LABELS = {
 };
 
 export default function Roadmap() {
-    const { id: boardId } = useParams();
+    const { id: planId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
     const {
-        getBoard, getLanes, getFeatures, createLane, updateLane, deleteLane,
-        createFeature, updateFeature, deleteFeature, loadBoardData
-    } = useBoards(user?.id);
-    const { choices, fetchChoices } = useStrategicChoices(boardId);
+        getPlan, getLanes, getFeatures, createLane, updateLane, deleteLane,
+        createFeature, updateFeature, deleteFeature, loadPlanData
+    } = usePlans(user?.id);
+    const { choices, fetchChoices } = useStrategicChoices(planId);
 
     const { addToast } = useToast();
-    const board = getBoard(boardId);
-    const lanes = getLanes(boardId);
+    const plan = getPlan(planId);
+    const lanes = getLanes(planId);
 
     // Load board data from backend on mount
     useEffect(() => {
-        if (boardId) {
-            loadBoardData(boardId);
+        if (planId) {
+            loadPlanData(planId);
             fetchChoices();
         }
-    }, [boardId, loadBoardData, fetchChoices]);
+    }, [planId, loadPlanData, fetchChoices]);
 
     const [year, setYear] = useState(new Date().getFullYear());
     const [showFeatureModal, setShowFeatureModal] = useState(false);
@@ -73,13 +73,13 @@ export default function Roadmap() {
 
     // Load board tags
     const fetchBoardTags = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         try {
-            const res = await fetch(`/api/tags?boardId=${boardId}`);
+            const res = await fetch(`/api/tags?planId=${planId}`);
             const data = await res.json();
             setBoardTags(data);
         } catch (e) { console.error(e); }
-    }, [boardId]);
+    }, [planId]);
 
     useEffect(() => { fetchBoardTags(); }, [fetchBoardTags]);
 
@@ -146,7 +146,7 @@ export default function Roadmap() {
 
     const handleAddLane = () => {
         const title = `Objetivo ${lanes.length + 1}`;
-        createLane(boardId, title);
+        createLane(planId, title);
     };
 
     const handleLaneDoubleClick = (lane) => {
@@ -196,7 +196,7 @@ export default function Roadmap() {
                 body: JSON.stringify({ sort_order: i })
             });
         }
-        loadBoardData(boardId);
+        loadPlanData(planId);
         setDraggingLaneId(null);
     };
 
@@ -222,7 +222,7 @@ export default function Roadmap() {
                         await fetch('/api/tags', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ boardId, name: tag.name, color: tag.color }),
+                            body: JSON.stringify({ planId, name: tag.name, color: tag.color }),
                         });
                     } catch (e) {
                         // Ignore duplicates
@@ -328,7 +328,7 @@ export default function Roadmap() {
                 laneId = laneMap[laneName.toLowerCase()];
             } else {
                 // Create new lane (createLane is async and returns a lane object)
-                const newLane = await createLane(boardId, laneName);
+                const newLane = await createLane(planId, laneName);
                 laneMap[laneName.toLowerCase()] = newLane.id;
                 laneId = newLane.id;
             }
@@ -340,7 +340,7 @@ export default function Roadmap() {
                         await fetch('/api/tags', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ boardId, name: tag.name, color: tag.color }),
+                            body: JSON.stringify({ planId, name: tag.name, color: tag.color }),
                         });
                     } catch (e) {
                         // Ignore duplicates
@@ -361,16 +361,16 @@ export default function Roadmap() {
         setShowImportModal(false);
         fetchBoardTags();
         addToast(`${rows.length} iniciativa${rows.length > 1 ? 's' : ''} importada${rows.length > 1 ? 's' : ''} com sucesso!`, 'success');
-        setTimeout(() => loadBoardData(boardId), 500);
+        setTimeout(() => loadPlanData(planId), 500);
     };
 
-    if (!board) {
+    if (!plan) {
         return (
             <div className="auth-container">
                 <div className="glass-surface auth-card" style={{ textAlign: 'center' }}>
-                    <h2>Board não encontrado</h2>
+                    <h2>Planejamento não encontrado</h2>
                     <p style={{ color: 'var(--text-secondary)', margin: '16px 0' }}>
-                        O board que você está procurando não existe.
+                        O planejamento que você está procurando não existe.
                     </p>
                     <button className="btn btn-primary" onClick={() => navigate('/')}>
                         Voltar para Dashboard
@@ -475,7 +475,7 @@ export default function Roadmap() {
     return (
         <>
             {/* Header */}
-            <BoardHeader board={board} boardId={boardId} currentView="roadmap">
+            <PlanHeader plan={plan} planId={planId} currentView="roadmap">
                 <div style={{ position: 'relative' }} ref={filterRef}>
                     <button className="btn btn-glass" onClick={() => setShowFilters(!showFilters)}>
                         <Filter size={16} /> Filtros
@@ -525,7 +525,7 @@ export default function Roadmap() {
                         </div>
                     )}
                 </div>
-            </BoardHeader>
+            </PlanHeader>
 
             {/* Roadmap Content */}
             <div className="roadmap-container animate-fade-in">
@@ -615,7 +615,7 @@ export default function Roadmap() {
                                                         <Plus size={16} /> Criar Primeiro Objetivo
                                                     </button>
                                                     {choices.length === 0 && (
-                                                        <button className="btn btn-glass" onClick={() => navigate(`/board/${boardId}/choices`)}>
+                                                        <button className="btn btn-glass" onClick={() => navigate(`/plan/${planId}/choices`)}>
                                                             <Target size={16} /> Definir Escolhas Estratégicas
                                                         </button>
                                                     )}
@@ -695,7 +695,7 @@ export default function Roadmap() {
                     onDelete={handleDeleteFeature}
                     onClose={() => { setShowFeatureModal(false); setEditingFeature(null); }}
                     boardTags={boardTags}
-                    boardId={boardId}
+                    planId={planId}
                     user={user}
                 />
             )}

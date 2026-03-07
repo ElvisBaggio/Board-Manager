@@ -7,13 +7,13 @@ const router = Router();
 // STRATEGIC CHOICES
 // ═══════════════════════════════════════════
 
-// GET all choices for a board
+// GET all choices for a plan
 router.get('/', async (req, res) => {
-    const { boardId } = req.query;
-    if (!boardId) return res.status(400).json({ error: 'boardId obrigatório' });
+    const { planId } = req.query;
+    if (!planId) return res.status(400).json({ error: 'planId obrigatório' });
     try {
         const choices = await db('strategic_choices')
-            .where('board_id', boardId)
+            .where('plan_id', planId)
             .orderBy('sort_order', 'asc');
         res.json(choices);
     } catch (error) {
@@ -43,13 +43,13 @@ router.get('/:id', async (req, res) => {
 
 // POST create choice
 router.post('/', async (req, res) => {
-    const { boardId, title, description, color } = req.body;
-    if (!boardId || !title) return res.status(400).json({ error: 'boardId e title obrigatórios' });
+    const { planId, title, description, color } = req.body;
+    if (!planId || !title) return res.status(400).json({ error: 'planId e title obrigatórios' });
     try {
         const id = crypto.randomUUID();
-        const maxOrder = await db('strategic_choices').where('board_id', boardId).max('sort_order as max').first();
+        const maxOrder = await db('strategic_choices').where('plan_id', planId).max('sort_order as max').first();
         await db('strategic_choices').insert({
-            id, board_id: boardId, title, description: description || '',
+            id, plan_id: planId, title, description: description || '',
             color: color || '#ff9500', sort_order: (maxOrder?.max ?? -1) + 1,
         });
         const created = await db('strategic_choices').where('id', id).first();
@@ -109,12 +109,12 @@ router.get('/:choiceId/goals', async (req, res) => {
     }
 });
 
-// GET all goals for a board (aggregate across all choices)
-router.get('/board-goals/:boardId', async (req, res) => {
+// GET all goals for a plan (aggregate across all choices)
+router.get('/plan-goals/:planId', async (req, res) => {
     try {
         const goals = await db('goals_kpis')
             .join('strategic_choices', 'goals_kpis.strategic_choice_id', 'strategic_choices.id')
-            .where('strategic_choices.board_id', req.params.boardId)
+            .where('strategic_choices.plan_id', req.params.planId)
             .select('goals_kpis.*', 'strategic_choices.title as choice_title')
             .orderBy('goals_kpis.created_at', 'asc');
         res.json(goals);
@@ -188,12 +188,12 @@ router.get('/goals/:goalId/links', async (req, res) => {
     }
 });
 
-// GET all links for a board
-router.get('/board-goal-links/:boardId', async (req, res) => {
+// GET all links for a plan
+router.get('/plan-goal-links/:planId', async (req, res) => {
     try {
         const links = await db('goal_objective_links')
             .join('lanes', 'goal_objective_links.lane_id', 'lanes.id')
-            .where('lanes.board_id', req.params.boardId)
+            .where('lanes.plan_id', req.params.planId)
             .select('goal_objective_links.*');
         res.json(links);
     } catch (error) {

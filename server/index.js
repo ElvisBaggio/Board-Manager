@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import db, { initDatabase } from './db.js';
 import authRoutes from './routes/auth.js';
-import boardsRoutes from './routes/boards.js';
+import plansRoutes from './routes/plans.js';
 import lanesRoutes from './routes/lanes.js';
 import featuresRoutes from './routes/features.js';
 import tagsRoutes from './routes/tags.js';
@@ -23,7 +23,7 @@ app.use(express.json());
 
 // Set up routes
 app.use('/api/auth', authRoutes);
-app.use('/api/boards', boardsRoutes);
+app.use('/api/plans', plansRoutes);
 app.use('/api/lanes', lanesRoutes);
 app.use('/api/features', featuresRoutes);
 app.use('/api/tags', tagsRoutes);

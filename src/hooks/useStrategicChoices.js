@@ -1,17 +1,17 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '../context/ToastContext';
 
-export function useStrategicChoices(boardId) {
+export function useStrategicChoices(planId) {
     const [choices, setChoices] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const { addToast } = useToast();
 
     const fetchChoices = useCallback(async () => {
-        if (!boardId) return;
+        if (!planId) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/strategic-choices?boardId=${boardId}`);
+            const res = await fetch(`/api/strategic-choices?planId=${planId}`);
             if (!res.ok) throw new Error('Falha ao buscar escolhas estratégicas');
             const data = await res.json();
             setChoices(data);
@@ -21,14 +21,14 @@ export function useStrategicChoices(boardId) {
         } finally {
             setLoading(false);
         }
-    }, [boardId]);
+    }, [planId]);
 
     const addChoice = async (choiceData) => {
         try {
             const res = await fetch('/api/strategic-choices', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...choiceData, boardId }),
+                body: JSON.stringify({ ...choiceData, planId }),
             });
             if (!res.ok) throw new Error('Falha ao salvar');
             const saved = await res.json();

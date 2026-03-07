@@ -15,7 +15,7 @@ async function initDatabase() {
     try {
       const allFeatures = await db('features')
         .join('lanes', 'features.lane_id', 'lanes.id')
-        .select('features.tags_json', 'lanes.board_id')
+        .select('features.tags_json', 'lanes.plan_id')
         .whereNotNull('features.tags_json')
         .andWhere('features.tags_json', '!=', '[]');
 
@@ -26,14 +26,14 @@ async function initDatabase() {
           for (const tag of tags) {
             if (!tag.name || !tag.name.trim()) continue;
             const existing = await db('tags')
-              .where('board_id', feat.board_id)
+              .where('plan_id', feat.plan_id)
               .whereRaw('LOWER(name) = LOWER(?)', [tag.name.trim()])
               .first();
             if (!existing) {
               const tagId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
               await db('tags').insert({
                 id: tagId,
-                board_id: feat.board_id,
+                plan_id: feat.plan_id,
                 name: tag.name.trim(),
                 color: tag.color || '#3498db',
               });

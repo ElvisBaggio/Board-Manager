@@ -7,30 +7,30 @@ import { useIndicators } from '../hooks/useIndicators';
 /**
  * OKR Panel sidebar — shows key results per objective, connected goals, and product indicators.
  */
-export default function OKRPanel({ boardId, lanes = [], onClose }) {
-    const { allKeyResults, loading: okrsLoading, refetch } = useBoardOKRs(boardId);
+export default function OKRPanel({ planId, lanes = [], onClose }) {
+    const { allKeyResults, loading: okrsLoading, refetch } = useBoardOKRs(planId);
     const {
         boardGoals, goalObjectiveLinks,
         fetchBoardGoals, fetchBoardGoalLinks,
         linkGoalToObjective, unlinkGoalFromObjective
-    } = useGoals(boardId);
+    } = useGoals(planId);
 
     const {
         boardProductIndicators, indicatorKrLinks,
         fetchBoardProductIndicators, fetchBoardKrLinks,
         linkIndicatorToKr, unlinkIndicatorFromKr
-    } = useIndicators(boardId);
+    } = useIndicators(planId);
 
     const [activeLaneId, setActiveLaneId] = useState(null);
 
     useEffect(() => {
-        if (boardId) {
+        if (planId) {
             fetchBoardGoals();
             fetchBoardGoalLinks();
             fetchBoardProductIndicators();
             fetchBoardKrLinks();
         }
-    }, [boardId, fetchBoardGoals, fetchBoardGoalLinks, fetchBoardProductIndicators, fetchBoardKrLinks]);
+    }, [planId, fetchBoardGoals, fetchBoardGoalLinks, fetchBoardProductIndicators, fetchBoardKrLinks]);
 
     // Group KRs by lane
     const krsByLane = {};
