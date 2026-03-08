@@ -125,7 +125,7 @@ router.get('/plan-goals/:planId', async (req, res) => {
 
 // POST create goal
 router.post('/:choiceId/goals', async (req, res) => {
-    const { title, targetValue, unit, frequency } = req.body;
+    const { title, targetValue, unit, frequency, lowerIsBetter } = req.body;
     if (!title) return res.status(400).json({ error: 'title obrigatório' });
     try {
         const id = crypto.randomUUID();
@@ -133,6 +133,7 @@ router.post('/:choiceId/goals', async (req, res) => {
             id, strategic_choice_id: req.params.choiceId,
             title, target_value: targetValue || 100, current_value: 0,
             unit: unit || '%', frequency: frequency || 'quarterly',
+            lower_is_better: lowerIsBetter ? 1 : 0,
         });
         const created = await db('goals_kpis').where('id', id).first();
         res.status(201).json(created);
@@ -143,7 +144,7 @@ router.post('/:choiceId/goals', async (req, res) => {
 
 // PUT update goal
 router.put('/goals/:id', async (req, res) => {
-    const { title, targetValue, currentValue, unit, frequency } = req.body;
+    const { title, targetValue, currentValue, unit, frequency, lowerIsBetter } = req.body;
     try {
         const updateData = {};
         if (title !== undefined) updateData.title = title;
@@ -151,6 +152,7 @@ router.put('/goals/:id', async (req, res) => {
         if (currentValue !== undefined) updateData.current_value = currentValue;
         if (unit !== undefined) updateData.unit = unit;
         if (frequency !== undefined) updateData.frequency = frequency;
+        if (lowerIsBetter !== undefined) updateData.lower_is_better = lowerIsBetter ? 1 : 0;
 
         await db('goals_kpis').where('id', req.params.id).update(updateData);
         const updated = await db('goals_kpis').where('id', req.params.id).first();

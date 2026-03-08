@@ -9,6 +9,7 @@ import CapacityDashboard from '../components/CapacityDashboard';
 import RiskMatrix from '../components/RiskMatrix';
 import { useTeamMembers } from '../hooks/useResources';
 import { useRisks } from '../hooks/useRisks';
+import { calcProgress } from '../utils/calculations';
 import { BarChart3, Target, CheckCircle, AlertCircle, TrendingUp, Clock, Users, Shield, ArrowRight, Map, GitMerge } from 'lucide-react';
 
 // Consistent with StrategicCanvas / StrategicChoices thresholds
@@ -209,7 +210,7 @@ export default function Analytics() {
                                         {boardGoals.map((goal, idx) => {
                                             const curr = parseFloat(goal.current_value) || 0;
                                             const tgt = parseFloat(goal.target_value) || 1;
-                                            const pct = Math.min(100, Math.round((curr / tgt) * 100));
+                                            const pct = calcProgress(curr, tgt, goal.lower_is_better);
                                             const color = healthColor(pct);
                                             return (
                                                 <div
@@ -218,7 +219,10 @@ export default function Analytics() {
                                                     style={{ animationDelay: `${idx * 0.04}s` }}
                                                 >
                                                     <div className="flex justify-between items-start mb-1">
-                                                        <span className="font-bold flex-1 mr-3">{goal.title}</span>
+                                                        <span className="font-bold flex-1 mr-3">
+                                                            {goal.title}
+                                                            {goal.lower_is_better && <span className="ml-1 text-[10px] opacity-60 text-[var(--accent)]" title="Menor é melhor">↓</span>}
+                                                        </span>
                                                         <span className="font-mono font-bold text-sm flex-shrink-0" style={{ color }}>{pct}%</span>
                                                     </div>
                                                     {goal.choice_title && (
@@ -261,12 +265,15 @@ export default function Analytics() {
                                                     {krs.map(kr => {
                                                         const curr = parseFloat(kr.currentValue ?? kr.current_value) || 0;
                                                         const tgt = parseFloat(kr.targetValue ?? kr.target_value) || 1;
-                                                        const pct = Math.min(100, Math.round((curr / tgt) * 100));
+                                                        const pct = calcProgress(curr, tgt, kr.lowerIsBetter || kr.lower_is_better);
                                                         const color = healthColor(pct);
                                                         return (
                                                             <div key={kr.id} className="flex flex-col gap-1">
                                                                 <div className="flex justify-between text-sm">
-                                                                    <span className="font-medium flex-1 mr-3">{kr.title}</span>
+                                                                    <span className="font-medium flex-1 mr-3">
+                                                                        {kr.title}
+                                                                        {(kr.lowerIsBetter || kr.lower_is_better) && <span className="ml-1 text-[10px] opacity-60 text-[var(--accent)]" title="Menor é melhor">↓</span>}
+                                                                    </span>
                                                                     <span className="font-mono font-bold flex-shrink-0" style={{ color }}>{pct}%</span>
                                                                 </div>
                                                                 <ProgressBar pct={pct} color={color} />

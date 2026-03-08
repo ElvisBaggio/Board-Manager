@@ -25,13 +25,13 @@ router.get('/', async (req, res) => {
 
 // GET aggregate counts by feature for a board (for roadmap badges)
 router.get('/counts', async (req, res) => {
-    const { boardId } = req.query;
-    if (!boardId) return res.status(400).json({ error: 'boardId obrigatório' });
+    const planId = req.query.planId || req.query.boardId;
+    if (!planId) return res.status(400).json({ error: 'planId obrigatório' });
     try {
         const counts = await db('execution_items')
             .join('features', 'execution_items.feature_id', 'features.id')
             .join('lanes', 'features.lane_id', 'lanes.id')
-            .where('lanes.board_id', boardId)
+            .where('lanes.plan_id', planId)
             .select('execution_items.feature_id')
             .count('execution_items.id as total')
             .select(db.raw("SUM(CASE WHEN execution_items.status = 'Done' THEN 1 ELSE 0 END) as done"))

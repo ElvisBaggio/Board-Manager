@@ -38,7 +38,7 @@ router.get('/product/plan/:planId', async (req, res) => {
 
 // POST create product indicator
 router.post('/product', async (req, res) => {
-    const { featureId, title, targetValue, unit } = req.body;
+    const { featureId, title, targetValue, unit, lowerIsBetter } = req.body;
     if (!featureId || !title) return res.status(400).json({ error: 'featureId e title obrigatórios' });
     try {
         const id = crypto.randomUUID();
@@ -47,6 +47,7 @@ router.post('/product', async (req, res) => {
             target_value: targetValue || 100,
             current_value: 0,
             unit: unit || '%',
+            lower_is_better: lowerIsBetter ? 1 : 0,
         });
         const created = await db('product_indicators').where('id', id).first();
         res.status(201).json(created);
@@ -57,13 +58,14 @@ router.post('/product', async (req, res) => {
 
 // PUT update product indicator
 router.put('/product/:id', async (req, res) => {
-    const { title, targetValue, currentValue, unit } = req.body;
+    const { title, targetValue, currentValue, unit, lowerIsBetter } = req.body;
     try {
         const updateData = {};
         if (title !== undefined) updateData.title = title;
         if (targetValue !== undefined) updateData.target_value = targetValue;
         if (currentValue !== undefined) updateData.current_value = currentValue;
         if (unit !== undefined) updateData.unit = unit;
+        if (lowerIsBetter !== undefined) updateData.lower_is_better = lowerIsBetter ? 1 : 0;
 
         await db('product_indicators').where('id', req.params.id).update(updateData);
         const updated = await db('product_indicators').where('id', req.params.id).first();

@@ -18,6 +18,7 @@ router.get('/', async (req, res) => {
             laneId: kr.lane_id,
             targetValue: kr.target_value,
             currentValue: kr.current_value,
+            lowerIsBetter: !!kr.lower_is_better,
             createdAt: kr.created_at,
         }));
         res.json(krs);
@@ -27,15 +28,15 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get all key results for a board (aggregated across lanes)
+// Get all key results for a plan (aggregated across lanes)
 router.get('/board', async (req, res) => {
-    const { boardId } = req.query;
-    if (!boardId) return res.status(400).json({ error: 'boardId obrigatório' });
+    const planId = req.query.planId || req.query.boardId;
+    if (!planId) return res.status(400).json({ error: 'planId obrigatório' });
 
     try {
         const rows = await db('key_results')
             .join('lanes', 'key_results.lane_id', 'lanes.id')
-            .where('lanes.board_id', boardId)
+            .where('lanes.plan_id', planId)
             .select('key_results.*', 'lanes.title as lane_title')
             .orderBy('key_results.created_at', 'asc');
 
@@ -45,6 +46,7 @@ router.get('/board', async (req, res) => {
             laneTitle: kr.lane_title,
             targetValue: kr.target_value,
             currentValue: kr.current_value,
+            lowerIsBetter: !!kr.lower_is_better,
             createdAt: kr.created_at,
         }));
         res.json(krs);
@@ -56,7 +58,7 @@ router.get('/board', async (req, res) => {
 
 // Create a key result
 router.post('/', async (req, res) => {
-    const { id, laneId, title, targetValue, currentValue, unit } = req.body;
+    const { id, laneId, title, targetValue, currentValue, unit, lowerIsBetter } = req.body;
     if (!id || !laneId || !title) {
         return res.status(400).json({ error: 'id, laneId e title obrigatórios' });
     }
@@ -69,6 +71,7 @@ router.post('/', async (req, res) => {
             target_value: targetValue || 100,
             current_value: currentValue || 0,
             unit: unit || '%',
+            lower_is_better: lowerIsBetter ? 1 : 0,
         });
         res.status(201).json({ id, laneId, title, targetValue, currentValue, unit });
     } catch (error) {
@@ -80,13 +83,14 @@ router.post('/', async (req, res) => {
 // Update a key result
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const { title, targetValue, currentValue, unit } = req.body;
+    const { title, targetValue, currentValue, unit, lowerIsBetter } = req.body;
 
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (targetValue !== undefined) updateData.target_value = targetValue;
     if (currentValue !== undefined) updateData.current_value = currentValue;
     if (unit !== undefined) updateData.unit = unit;
+    if (lowerIsBetter !== undefined) updateData.lower_is_better = lowerIsBetter ? 1 : 0;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).json({ error: 'Nada para atualizar' });

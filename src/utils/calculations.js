@@ -3,6 +3,22 @@
  */
 
 /**
+ * Calculate progress percentage, handling both "higher is better" and "lower is better" metrics.
+ * For "lower is better" (e.g. latency, churn): progress = (target / current) * 100
+ * For "higher is better" (e.g. revenue, users): progress = (current / target) * 100
+ */
+export function calcProgress(current, target, lowerIsBetter = false) {
+    const c = parseFloat(current) || 0;
+    const t = parseFloat(target);
+    if (!t || t === 0) return 0;
+    if (lowerIsBetter) {
+        if (c === 0) return 100; // reached zero — perfect
+        return Math.min(100, Math.round((t / c) * 100));
+    }
+    return Math.min(100, Math.round((c / t) * 100));
+}
+
+/**
  * Calculate objective progress based on feature statuses.
  * Not Started = 0%, On Going = 50%, Done = 100%, Blocked = 0%
  */
@@ -32,8 +48,7 @@ export function calculateHealthStatus(progress, keyResults = []) {
     let krProgress = 100;
     if (keyResults.length > 0) {
         krProgress = keyResults.reduce((sum, kr) => {
-            const pct = kr.targetValue > 0 ? (kr.currentValue / kr.targetValue) * 100 : 0;
-            return sum + Math.min(pct, 100);
+            return sum + calcProgress(kr.currentValue, kr.targetValue, kr.lowerIsBetter);
         }, 0) / keyResults.length;
     }
 

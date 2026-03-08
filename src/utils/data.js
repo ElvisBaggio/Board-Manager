@@ -69,6 +69,47 @@ export function calculateBarPosition(startDate, endDate, year, visibleMonths) {
     return { left: `${left}%`, width: `${Math.max(width, 1)}%` };
 }
 
+/**
+ * Assign each feature a row index so overlapping bars stack vertically.
+ * Uses a greedy interval-scheduling approach: for each feature (sorted by start date),
+ * place it in the first row where it doesn't overlap any existing feature.
+ * Returns a Map<featureId, rowIndex>.
+ */
+export function computeFeatureRows(features, year, visibleMonths) {
+    // Parse dates and filter out features with no valid position
+    const items = features
+        .map(f => {
+            const pos = calculateBarPosition(f.startDate, f.endDate, year, visibleMonths);
+            if (!pos) return null;
+            const start = new Date(f.startDate + 'T00:00:00');
+            const end = new Date(f.endDate + 'T00:00:00');
+            return { id: f.id, start, end };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.start - b.start || a.end - b.end);
+
+    const rows = []; // rows[i] = end date of last feature in row i
+    const rowMap = new Map();
+
+    for (const item of items) {
+        let placed = false;
+        for (let r = 0; r < rows.length; r++) {
+            if (item.start > rows[r]) {
+                rows[r] = item.end;
+                rowMap.set(item.id, r);
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) {
+            rowMap.set(item.id, rows.length);
+            rows.push(item.end);
+        }
+    }
+
+    return { rowMap, rowCount: Math.max(rows.length, 1) };
+}
+
 export function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }

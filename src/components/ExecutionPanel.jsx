@@ -3,6 +3,7 @@ import { useExecutionItems } from '../hooks/useExecutionItems';
 import { useIndicators } from '../hooks/useIndicators';
 import { Plus, Trash2, GripVertical, Activity, Zap, Circle, CheckCircle2, Clock, AlertOctagon, User } from 'lucide-react';
 import ConfirmDialog from './ConfirmDialog';
+import { calcProgress } from '../utils/calculations';
 
 const ITEM_TYPES = {
     'Epic': { label: 'Épico', color: 'var(--accent)', icon: '🟣' },
@@ -110,7 +111,7 @@ export default function ExecutionPanel({ featureId, planId }) {
 
                         <div className="flex flex-col gap-2 mb-3">
                             {featureIndicators.map(ind => {
-                                const prog = ind.target_value > 0 ? Math.min(100, (ind.current_value / ind.target_value) * 100) : 0;
+                                const prog = calcProgress(ind.current_value, ind.target_value, ind.lower_is_better);
                                 return (
                                     <div key={ind.id} className="flex flex-col gap-1 text-sm bg-white/5 p-2 rounded relative group">
                                         <div className="flex justify-between">

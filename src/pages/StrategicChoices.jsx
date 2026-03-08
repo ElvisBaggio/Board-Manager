@@ -7,6 +7,7 @@ import { useGoals } from '../hooks/useGoals';
 import PlanHeader from '../components/PlanHeader';
 import { Target, Plus, Check, Trash2, Edit2, Link as LinkIcon, X } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { calcProgress } from '../utils/calculations';
 
 const FREQUENCY_LABELS = {
     daily: 'Diária',
@@ -238,9 +239,7 @@ export default function StrategicChoices() {
                                             Nenhum Goal definido para esta escolha.
                                         </div>
                                     ) : choiceGoals.map((goal, idx) => {
-                                        const progress = goal.target_value > 0
-                                            ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100))
-                                            : 0;
+                                        const progress = calcProgress(goal.current_value, goal.target_value, goal.lower_is_better);
 
                                         let healthColor = 'var(--danger)';
                                         if (progress >= 80) healthColor = 'var(--success)';

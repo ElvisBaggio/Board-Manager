@@ -9,6 +9,7 @@ import { useIndicators } from '../hooks/useIndicators';
 import PlanHeader from '../components/PlanHeader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OKRPanel from '../components/OKRPanel';
+import { calcProgress } from '../utils/calculations';
 import { Filter, Activity, Target, Crosshair, Zap, ArrowDown, Plus, Edit2, Trash2, X, GitMerge } from 'lucide-react';
 
 export default function MetricsCascade() {
@@ -53,7 +54,7 @@ export default function MetricsCascade() {
             fetchBoardProductIndicators();
             fetchEfficiencyIndicators();
         }
-    }, [planId, loadBoardData, fetchChoices, fetchBoardGoals, fetchOKRs, fetchBoardProductIndicators, fetchEfficiencyIndicators]);
+    }, [planId, loadPlanData, fetchChoices, fetchBoardGoals, fetchOKRs, fetchBoardProductIndicators, fetchEfficiencyIndicators]);
 
     const filteredData = useMemo(() => {
         let goals = Array.isArray(boardGoals) ? boardGoals : [];
@@ -214,7 +215,8 @@ export default function MetricsCascade() {
     if (!plan) return <div className="p-8">Carregando...</div>;
 
     const renderCard = (item, current, target, unit, subtext, type = 'success', level, extraFields = {}) => {
-        const progress = target !== '-' && target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+        const lowerIsBetter = !!(item.lower_is_better || item.lowerIsBetter);
+        const progress = target !== '-' && target > 0 ? calcProgress(current, target, lowerIsBetter) : 0;
         let healthColor = 'var(--danger)';
         if (type === 'efficiency') healthColor = 'var(--accent)';
         else if (progress >= 80) healthColor = 'var(--success)';
@@ -223,7 +225,10 @@ export default function MetricsCascade() {
         return (
             <div className="glass-surface p-4 rounded-lg min-w-[200px] flex-1 animate-fade-in-up hover:translate-y-[-2px] transition-transform group relative">
                 <div className="text-sm text-secondary mb-1 flex justify-between items-start">
-                    <span className="font-medium line-clamp-1 pr-8" title={item.title}>{item.title}</span>
+                    <span className="font-medium line-clamp-1 pr-8" title={item.title}>
+                        {item.title}
+                        {lowerIsBetter && <span className="ml-1.5 text-[10px] opacity-60 text-[var(--accent)]" title="Menor é melhor">↓</span>}
+                    </span>
                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                             className="p-1 rounded hover:bg-white/10 text-secondary hover:text-white"

@@ -3,6 +3,7 @@ import { X, Plus, Trash2, Target, Link as LinkIcon, AlertCircle } from 'lucide-r
 import { useOKRs, useBoardOKRs } from '../hooks/useOKRs';
 import { useGoals } from '../hooks/useGoals';
 import { useIndicators } from '../hooks/useIndicators';
+import { calcProgress } from '../utils/calculations';
 
 /**
  * OKR Panel sidebar — shows key results per objective, connected goals, and product indicators.
@@ -122,7 +123,7 @@ function OKRLaneSection({
     };
 
     const overallProgress = keyResults.length > 0
-        ? Math.round(keyResults.reduce((sum, kr) => sum + Math.min((kr.currentValue || kr.current_value || 0) / (kr.targetValue || kr.target_value || 100) * 100, 100), 0) / keyResults.length)
+        ? Math.round(keyResults.reduce((sum, kr) => sum + calcProgress(kr.currentValue || kr.current_value || 0, kr.targetValue || kr.target_value || 100, kr.lowerIsBetter || kr.lower_is_better), 0) / keyResults.length)
         : 0;
 
     return (
@@ -247,7 +248,8 @@ function KRItem({
     const current = kr.currentValue || kr.current_value || 0;
     const target = kr.targetValue || kr.target_value || 100;
     const unit = kr.unit || '%';
-    const pct = Math.min(Math.round((current / target) * 100), 100);
+    const lowerIsBetter = !!(kr.lowerIsBetter || kr.lower_is_better);
+    const pct = calcProgress(current, target, lowerIsBetter);
 
     const linkedIndIds = indicatorKrLinks.filter(l => l.kr_id === kr.id).map(l => l.indicator_id);
 
@@ -255,7 +257,10 @@ function KRItem({
         <div className="bg-white/5 rounded border border-white/10 p-2 flex flex-col gap-2 group">
             <div className="flex justify-between items-start gap-2">
                 <div className="flex-1">
-                    <span className="text-sm font-medium text-white block leading-tight">{kr.title}</span>
+                    <span className="text-sm font-medium text-white block leading-tight">
+                        {kr.title}
+                        {lowerIsBetter && <span className="ml-1 text-[10px] opacity-60 text-[var(--accent)]" title="Menor é melhor">↓</span>}
+                    </span>
                     <button
                         className="text-[10px] text-muted hover:text-white flex items-center gap-1 mt-1 transition-colors"
                         onClick={() => setShowIndLinker(!showIndLinker)}

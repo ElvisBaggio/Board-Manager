@@ -1002,7 +1002,7 @@ a:hover {
 
 .timeline-lane-content {
   position: relative;
-  height: 60px;
+  min-height: 48px;
   border-bottom: 1px solid var(--glass-border);
   border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -1023,8 +1023,6 @@ a:hover {
 /* Feature Bar */
 .feature-bar {
   position: absolute;
-  top: 8px;
-  height: calc(100% - 16px);
   border-radius: var(--radius-sm);
   padding: 0 var(--space-xs);
   display: flex;
@@ -1032,7 +1030,7 @@ a:hover {
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: left var(--transition-fast), width var(--transition-fast), opacity var(--transition-fast), box-shadow var(--transition-fast);
   z-index: 2;
   min-width: 40px;
   border: 1px solid rgba(255, 255, 255, 0.1);

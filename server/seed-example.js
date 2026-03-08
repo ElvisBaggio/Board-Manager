@@ -117,8 +117,8 @@ async function seed() {
     await db('key_results').insert([
         { id: krConversion, lane_id: laneAcquisition, title: 'Aumentar conversão trial→pago de 8% para 20%', target_value: 20, current_value: 12, unit: '%' },
         { id: krIntegrations, lane_id: laneFeatures, title: 'Lançar 5 integrações nativas (Slack, Jira, Notion, Google, MS Teams)', target_value: 5, current_value: 2, unit: 'integrações' },
-        { id: krLatency, lane_id: lanePerformance, title: 'Reduzir latência média para < 1s', target_value: 1, current_value: 2.1, unit: 's' },
-        { id: krChurn, lane_id: laneRetention, title: 'Reduzir churn mensal de 5% para 2%', target_value: 2, current_value: 3.8, unit: '%' },
+        { id: krLatency, lane_id: lanePerformance, title: 'Reduzir latência média para < 1s', target_value: 1, current_value: 2.1, unit: 's', lower_is_better: 1 },
+        { id: krChurn, lane_id: laneRetention, title: 'Reduzir churn mensal de 5% para 2%', target_value: 2, current_value: 3.8, unit: '%', lower_is_better: 1 },
     ]);
     console.log('🎯 Key Results criados');
 
@@ -175,8 +175,8 @@ async function seed() {
         { id: piConversion, feature_id: features[0].id, title: 'Taxa de conclusão do onboarding', target_value: 85, current_value: 71, unit: '%' },
         { id: piActivation, feature_id: features[1].id, title: 'Conversão trial → pago', target_value: 20, current_value: 8, unit: '%' },
         { id: piIntUsage, feature_id: features[3].id, title: 'Adoção de integrações (% usuários)', target_value: 60, current_value: 25, unit: '%' },
-        { id: piP95, feature_id: features[6].id, title: 'P95 latência páginas complexas', target_value: 1200, current_value: 2800, unit: 'ms' },
-        { id: piErrorRate, feature_id: features[8].id, title: 'Taxa de erros 5xx em produção', target_value: 0.1, current_value: 0.3, unit: '%' },
+        { id: piP95, feature_id: features[6].id, title: 'P95 latência páginas complexas', target_value: 1200, current_value: 2800, unit: 'ms', lower_is_better: 1 },
+        { id: piErrorRate, feature_id: features[8].id, title: 'Taxa de erros 5xx em produção', target_value: 0.1, current_value: 0.3, unit: '%', lower_is_better: 1 },
         { id: piCSAT, feature_id: features[10].id, title: 'CSAT do chat de suporte', target_value: 90, current_value: 78, unit: '%' },
     ]);
     console.log('📈 Indicadores de produto criados');

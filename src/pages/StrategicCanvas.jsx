@@ -8,6 +8,7 @@ import PlanHeader from '../components/PlanHeader';
 import PlanWelcome from '../components/PlanWelcome';
 import { Edit2, Check, Target, Crosshair, BarChart3, TrendingUp } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { calcProgress } from '../utils/calculations';
 
 export default function StrategicCanvas() {
     const { id: planId } = useParams();
@@ -93,7 +94,7 @@ export default function StrategicCanvas() {
                         className="text-lg leading-relaxed whitespace-pre-wrap cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded transition-colors"
                         onClick={() => setEditingField(field)}
                     >
-                        {board[field] || <span className="text-muted italic">Não definido. Clique para editar.</span>}
+                        {plan[field] || <span className="text-muted italic">Não definido. Clique para editar.</span>}
                     </div>
                 )}
             </div>
@@ -102,7 +103,7 @@ export default function StrategicCanvas() {
 
     const getGoalsForChoice = (choiceId) => boardGoals.filter(g => g.strategic_choice_id === choiceId);
 
-    const isEmptyBoard = !board.justCause && !board.vision && !board.mission && choices.length === 0;
+    const isEmptyPlan = !plan.justCause && !plan.vision && !plan.mission && choices.length === 0;
 
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-[var(--bg-color)] text-[var(--text-color)]">
@@ -179,9 +180,7 @@ export default function StrategicCanvas() {
                                             ) : (
                                                 <div className="flex flex-col gap-4">
                                                     {goals.map(goal => {
-                                                        const progress = goal.target_value > 0
-                                                            ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100))
-                                                            : 0;
+                                                        const progress = calcProgress(goal.current_value, goal.target_value, goal.lower_is_better);
 
                                                         let healthColor = 'var(--danger)';
                                                         if (progress >= 80) healthColor = 'var(--success)';

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePlans } from '../hooks/usePlans';
 import { useStrategicChoices } from '../hooks/useStrategicChoices';
-import { MONTHS } from '../utils/data';
+import { MONTHS, computeFeatureRows } from '../utils/data';
 import FeatureBar, { STATUS_COLORS } from '../components/FeatureBar';
 import FeatureModal from '../components/FeatureModal';
 import ImportModal from '../components/ImportModal';
@@ -380,8 +380,14 @@ export default function Roadmap() {
         );
     }
 
+    const ROW_HEIGHT = 36;
+    const LANE_PADDING = 12;
+
     const renderLaneRow = (lane) => {
         const features = getFilteredFeatures(lane.id);
+        const { rowMap, rowCount } = computeFeatureRows(features, year, visibleMonths);
+        const laneHeight = rowCount * ROW_HEIGHT + LANE_PADDING;
+
         return (
             <tr
                 key={lane.id}
@@ -455,7 +461,7 @@ export default function Roadmap() {
                     onDrop={(e) => handleDrop(e, lane.id)}
                     onClick={(e) => handleTimelineClick(e, lane.id)}
                     title="Clique para criar uma iniciativa"
-                    style={{ cursor: 'crosshair' }}
+                    style={{ cursor: 'crosshair', height: `${laneHeight}px` }}
                 >
                     {features.map(feature => (
                         <FeatureBar
@@ -465,6 +471,8 @@ export default function Roadmap() {
                             onClick={openEditFeature}
                             onUpdateFeature={updateFeature}
                             visibleMonths={visibleMonths}
+                            row={rowMap.get(feature.id) || 0}
+                            rowHeight={ROW_HEIGHT}
                         />
                     ))}
                 </td>

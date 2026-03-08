@@ -79,7 +79,7 @@ function FeatureTooltip({ feature, barRef, colors }) {
     );
 }
 
-export default function FeatureBar({ feature, year, onClick, onUpdateFeature, visibleMonths }) {
+export default function FeatureBar({ feature, year, onClick, onUpdateFeature, visibleMonths, row = 0, rowHeight = 36 }) {
     const [isDragging, setIsDragging] = useState(false);
     const [dragState, setDragState] = useState(null);
     const [previewPos, setPreviewPos] = useState(null);
@@ -222,6 +222,8 @@ export default function FeatureBar({ feature, year, onClick, onUpdateFeature, vi
             style={{
                 left: displayPos.left,
                 width: displayPos.width,
+                top: `${row * rowHeight + 4}px`,
+                height: `${rowHeight - 6}px`,
                 cursor: isDragging ? 'grabbing' : 'pointer',
                 opacity: isDragging ? 0.8 : 1,
                 zIndex: isDragging ? 20 : (showTooltip ? 15 : 10),
